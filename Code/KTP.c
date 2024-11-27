@@ -87,7 +87,6 @@ int bfs(int n) {
     return 0;
 }
 
-
 // DFS implementation
 int dfs(int n, int moveCount, Position pos) {
     if (hasTimedOut()) return 0;
