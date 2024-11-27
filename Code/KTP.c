@@ -50,18 +50,24 @@ int hasTimedOut() {
 
 // BFS implementation
 int bfs(int n) {
-    Node queue[n * n * 8]; // Large enough queue
+    Node *queue = (Node *)malloc(n * n * 8 * sizeof(Node)); // Large enough queue
+    if (queue == NULL) {
+        printf("Memory allocation failed.\n");
+        return 0;
+    }
     int front = 0, rear = 0;
 
     queue[rear++] = (Node){{0, 0}, 1};
     board[0][0] = 0;
-
+            free(queue);
+            return 0;
     while (front < rear) {
         if (hasTimedOut()) {
             printf("Timeout! Search took too long.\n");
             return 0;
         }
-
+            free(queue);
+            return 1; // Solution found
         Node current = queue[front++];
         nodesExpanded++;
 
