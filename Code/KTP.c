@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #define MAX_SIZE 52
 #define INF 1e9
@@ -50,28 +51,29 @@ int hasTimedOut() {
 
 // BFS implementation
 int bfs(int n) {
-    Node *queue = (Node *)malloc(n * n * 8 * sizeof(Node)); // Large enough queue
-    if (queue == NULL) {
-        printf("Memory allocation failed.\n");
-        return 0;
-    }
+    Node *queue = malloc(n * n * sizeof(Node));
     int front = 0, rear = 0;
+
+    // Reset board
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            board[i][j] = -1;
 
     queue[rear++] = (Node){{0, 0}, 1};
     board[0][0] = 0;
-            free(queue);
-            return 0;
+
     while (front < rear) {
         if (hasTimedOut()) {
             printf("Timeout! Search took too long.\n");
+            free(queue);
             return 0;
         }
-            free(queue);
-            return 1; // Solution found
+
         Node current = queue[front++];
         nodesExpanded++;
 
         if (current.moveCount == n * n) {
+            free(queue);
             return 1; // Solution found
         }
 
@@ -84,6 +86,8 @@ int bfs(int n) {
             }
         }
     }
+
+    free(queue);
     return 0;
 }
 
@@ -107,8 +111,7 @@ int dfs(int n, int moveCount, Position pos) {
     return 0;
 }
 
-// TODO: Implement DFS with h1b
-// DFS with heuristic h1b
+// Heuristic: Number of accessible moves
 int heuristicH1b(int n, Position pos) {
     int count = 0;
     for (int i = 0; i < 8; i++) {
@@ -119,6 +122,8 @@ int heuristicH1b(int n, Position pos) {
     return count;
 }
 
+// TODO: Implement DFS with h1b
+// DFS with heuristic h1b (Warnsdorff's Rule)
 int dfsWithH1b(int n, int moveCount, Position pos) {
     if (hasTimedOut()) return 0;
 
@@ -139,13 +144,13 @@ int dfsWithH1b(int n, int moveCount, Position pos) {
         }
     }
 
-    // Sort moves based on heuristic (ascending order)
+    // Sort moves based on number of future moves (ascending)
     for (int i = 0; i < count - 1; i++) {
         for (int j = 0; j < count - i - 1; j++) {
             if (priorities[j] > priorities[j + 1]) {
-                int temp = priorities[j];
+                int tempPriority = priorities[j];
                 priorities[j] = priorities[j + 1];
-                priorities[j + 1] = temp;
+                priorities[j + 1] = tempPriority;
 
                 Position tempPos = moves[j];
                 moves[j] = moves[j + 1];
@@ -172,8 +177,10 @@ double distanceToCorner(int n, Position pos) {
     double minDistance = INF;
 
     for (int i = 0; i < 4; i++) {
-        double dist = (pos.x - corners[i].x) * (pos.x - corners[i].x) +
-                      (pos.y - corners[i].y) * (pos.y - corners[i].y);
+        double dist = sqrt(
+            (pos.x - corners[i].x) * (pos.x - corners[i].x) +
+            (pos.y - corners[i].y) * (pos.y - corners[i].y)
+        );
         if (dist < minDistance) {
             minDistance = dist;
         }
@@ -181,7 +188,7 @@ double distanceToCorner(int n, Position pos) {
     return minDistance;
 }
 
-// DFS with heuristic h2
+// DFS with h2 heuristic (enhanced Warnsdorff)
 int dfsWithH2(int n, int moveCount, Position pos) {
     if (hasTimedOut()) return 0;
 
