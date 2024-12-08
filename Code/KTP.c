@@ -27,97 +27,18 @@ void printPath(Position path[], int steps);
 void freeQueue(Node** queue, int* front, int* rear);
 void indexToChessNotation(Position pos, char* notation);
 
-// DFS implementation (from previous code)
+// BFS implementation
+bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t startTime, int timeLimit);
+
+// DFS implementation
 bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, int* nodesExpanded, time_t startTime, int timeLimit);
 
-// Heuristic implementations (from previous code)
+// Heuristic implementations
 int heuristicH1b(int x, int y, int n, bool visited[n][n]);
 int heuristicH2(int x, int y, int n, bool visited[n][n]);
 bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), int* nodesExpanded, time_t startTime, int timeLimit);
 
-// New BFS implementation
-bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t startTime, int timeLimit) {
-    Node** queue = malloc(n * n * n * sizeof(Node*));
-    int front = 0, rear = 0;
-    *nodesExpanded = 0;
-
-    // Initialize first node
-    Node* startNode = malloc(sizeof(Node));
-    startNode->pos.x = 0;
-    startNode->pos.y = 0;
-    startNode->parent = NULL;
-    startNode->depth = 1;
-
-    queue[rear++] = startNode;
-    visited[0][0] = true;
-
-    while (front < rear) {
-        // Check for timeout
-        if (difftime(time(NULL), startTime) >= timeLimit) {
-            freeQueue(queue, &front, &rear);
-            return false;
-        }
-
-        Node* current = queue[front++];
-        (*nodesExpanded)++;
-
-        // If we've reached a full tour
-        if (current->depth == n * n) {
-            // Reconstruct path
-            Node* temp = current;
-            int pathLength = 0;
-            while (temp != NULL) {
-                path[pathLength++] = temp->pos;
-                temp = temp->parent;
-            }
-
-            // Reverse path to get correct order
-            for (int i = 0; i < pathLength / 2; i++) {
-                Position tempPos = path[i];
-                path[i] = path[pathLength - 1 - i];
-                path[pathLength - 1 - i] = tempPos;
-            }
-
-            // Free queue and nodes
-            freeQueue(queue, &front, &rear);
-            return true;
-        }
-
-        // Try all possible knight moves
-        for (int i = 0; i < 8; i++) {
-            int nx = current->pos.x + dx[i];
-            int ny = current->pos.y + dy[i];
-
-            // Check if move is valid
-            if (isValidMove(nx, ny, n, visited)) {
-                Node* newNode = malloc(sizeof(Node));
-                newNode->pos.x = nx;
-                newNode->pos.y = ny;
-                newNode->parent = current;
-                newNode->depth = current->depth + 1;
-
-                queue[rear++] = newNode;
-                visited[nx][ny] = true;
-            }
-        }
-    }
-
-    // No solution found
-    freeQueue(queue, &front, &rear);
-    return false;
-}
-
-// Utility function to free queue and prevent memory leaks
-void freeQueue(Node** queue, int* front, int* rear) {
-    while (*front < *rear) {
-        Node* node = queue[*front];
-        free(node);
-        (*front)++;
-    }
-    free(queue);
-}
-
-// Main function (from previous code, with some improvements)
+// Main Function
 int main() {
     int n, method, timeLimit;
     printf("Enter the board size (n): ");
@@ -198,6 +119,88 @@ int main() {
     free(path);
 
     return 0;
+}
+
+// BFS implementation
+bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t startTime, int timeLimit) {
+    Node** queue = malloc(n * n * n * sizeof(Node*));
+    int front = 0, rear = 0;
+    *nodesExpanded = 0;
+
+    // Initialize first node
+    Node* startNode = malloc(sizeof(Node));
+    startNode->pos.x = 0;
+    startNode->pos.y = 0;
+    startNode->parent = NULL;
+    startNode->depth = 1;
+
+    queue[rear++] = startNode;
+    visited[0][0] = true;
+
+    while (front < rear) {
+        // Check for timeout
+        if (difftime(time(NULL), startTime) >= timeLimit) {
+            freeQueue(queue, &front, &rear);
+            return false;
+        }
+
+        Node* current = queue[front++];
+        (*nodesExpanded)++;
+
+        // If we've reached a full tour
+        if (current->depth == n * n) {
+            // Reconstruct path
+            Node* temp = current;
+            int pathLength = 0;
+            while (temp != NULL) {
+                path[pathLength++] = temp->pos;
+                temp = temp->parent;
+            }
+
+            // Reverse path to get correct order
+            for (int i = 0; i < pathLength / 2; i++) {
+                Position tempPos = path[i];
+                path[i] = path[pathLength - 1 - i];
+                path[pathLength - 1 - i] = tempPos;
+            }
+
+            // Free queue and nodes
+            freeQueue(queue, &front, &rear);
+            return true;
+        }
+
+        // Try all possible knight moves
+        for (int i = 0; i < 8; i++) {
+            int nx = current->pos.x + dx[i];
+            int ny = current->pos.y + dy[i];
+
+            // Check if move is valid
+            if (isValidMove(nx, ny, n, visited)) {
+                Node* newNode = malloc(sizeof(Node));
+                newNode->pos.x = nx;
+                newNode->pos.y = ny;
+                newNode->parent = current;
+                newNode->depth = current->depth + 1;
+
+                queue[rear++] = newNode;
+                visited[nx][ny] = true;
+            }
+        }
+    }
+
+    // No solution found
+    freeQueue(queue, &front, &rear);
+    return false;
+}
+
+// Utility function to free queue and prevent memory leaks
+void freeQueue(Node** queue, int* front, int* rear) {
+    while (*front < *rear) {
+        Node* node = queue[*front];
+        free(node);
+        (*front)++;
+    }
+    free(queue);
 }
 
 // Check if a move is valid
