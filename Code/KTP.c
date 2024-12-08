@@ -24,6 +24,8 @@ typedef struct Node {
 bool isValidMove(int x, int y, int n, bool visited[n][n]);
 void printBoard(int n, Position path[], int steps);
 void printPath(Position path[], int steps);
+char* formatTransition(const char* from, const char* to);
+void printExpansionTree(Position path[], int steps, int n);
 void freeQueue(Node** queue, int* front, int* rear);
 void indexToChessNotation(Position pos, char* notation);
 
@@ -103,6 +105,7 @@ int main() {
         printf("Time spent: %.2f seconds\n", difftime(time(NULL), startTime));
         printf("Coordinates of the tour:\n");
         printPath(path, n * n);
+        printExpansionTree(path, n * n, n);
         printf("Board representation:\n");
         printBoard(n, path, n * n);
     } else {
@@ -220,29 +223,99 @@ void printBoard(int n, Position path[], int steps) {
         board[path[i].x][path[i].y] = i + 1;
     }
 
+    printf("   ");
+    for (int j = 0; j < n; j++) {
+        printf("  %c  ", 'a' + j); // Column labels
+    }
+    printf("\n");
+
     for (int i = 0; i < n; i++) {
+        printf("   ");
+        for (int j = 0; j < n; j++) {
+            printf("-----");
+        }
+        printf("-\n");
+
+        printf(" %2d ", n - i); // Row labels
         for (int j = 0; j < n; j++) {
             if (board[i][j] == -1) {
-                printf("X\t");
+                printf("|  X "); // Empty square
             } else {
-                printf("%d\t", board[i][j]);
+                printf("|%3d ", board[i][j]); // Move number
             }
         }
-        printf("\n");
+        printf("|\n");
     }
+
+    printf("   ");
+    for (int j = 0; j < n; j++) {
+        printf("-----");
+    }
+    printf("-\n");
+
+    printf("   ");
+    for (int j = 0; j < n; j++) {
+        printf("  %c  ", 'a' + j); // Column labels
+    }
+    printf("\n");
 }
 
 // Print the path as coordinates
 void printPath(Position path[], int steps) {
-    char notation[4];
+    printf("\nKnight's Tour Path:\n");
+    printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
+    printf("| Step  | Current Square |       Next Square       | Transition (Chess Not.) | Location (x, y) |\n");
+    printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
+
     for (int i = 0; i < steps; i++) {
-        indexToChessNotation(path[i], notation);
-        printf("%s", notation);
+        char currentNotation[4], nextNotation[4];
+        indexToChessNotation(path[i], currentNotation);
+
         if (i < steps - 1) {
-            printf(" -> ");
+            // For intermediate moves, calculate transition
+            indexToChessNotation(path[i + 1], nextNotation);
+            printf("| %5d | %14s | %23s | %19s     | %13d   |\n",
+                   i + 1, 
+                   currentNotation, 
+                   nextNotation, 
+                   formatTransition(currentNotation, nextNotation),
+                   (path[i].x + 1) * 10 + (path[i].y + 1));
+        } else {
+            // Last move, no next location or transition
+            printf("| %5d | %14s | %23s | %19s     | %13d   |\n",
+                   i + 1, 
+                   currentNotation, 
+                   "None", 
+                   "None", 
+                   (path[i].x + 1) * 10 + (path[i].y + 1));
         }
     }
-    printf("\n");
+
+    printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
+}
+
+// Helper function to center the transition
+char* formatTransition(const char* from, const char* to) {
+    static char transition[20];
+    snprintf(transition, sizeof(transition), "%s -> %s", from, to);
+    return transition;
+}
+
+// Print the expansion tree
+void printExpansionTree(Position path[], int steps, int n) {
+    printf("Expansion Tree:\n");
+    for (int i = 0; i < steps; i++) {
+        for (int j = 0; j < i; j++) {
+            printf("   "); // Indentation
+        }
+        char notation[4];
+        indexToChessNotation(path[i], notation);
+        if (i == steps - 1) {
+            printf("`-- %s *\n", notation); // Highlight the final move
+        } else {
+            printf("|-- %s\n", notation);
+        }
+    }
 }
 
 // DFS implementation (unchanged from previous code)
