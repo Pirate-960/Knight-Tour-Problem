@@ -20,7 +20,7 @@ typedef struct Node {
     int depth;
 } Node;
 
-// Function prototypes
+// Function prototypes for utility functions and search algorithms
 bool isValidMove(int x, int y, int n, bool visited[n][n]);
 void printBoard(int n, Position path[], int steps);
 void printPath(Position path[], int steps);
@@ -29,18 +29,20 @@ void printExpansionTree(Position path[], int steps, int n);
 void freeQueue(Node** queue, int* front, int* rear);
 void indexToChessNotation(Position pos, char* notation);
 
-// BFS implementation
+// BFS implementation - Queue-based search algorithm to find the knight's tour path on the board of size n x n
 bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t startTime, int timeLimit);
 
-// DFS implementation
+// DFS implementation - Backtracking search algorithm to find the knight's tour path on the board of size n x n
 bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, int* nodesExpanded, time_t startTime, int timeLimit);
 
-// Heuristic implementations
+/** Heuristic implementations for DFS with heuristic search algorithms (Warnsdorff's Rule and Enhanced Heuristic) 
+ *  to find the knight's tour path on the board of size n x n with a given heuristic function for prioritizing moves 
+ *  based on the number of valid moves and corner distance from the center of the board respectively **/
 int heuristicH1b(int x, int y, int n, bool visited[n][n]);
 int heuristicH2(int x, int y, int n, bool visited[n][n]);
 bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), int* nodesExpanded, time_t startTime, int timeLimit);
 
-// Main Function
+// Main Function - Entry point of the program to get user input and run the search algorithm based on the chosen method and time limit in seconds
 int main() {
     int n, method, timeLimit;
     printf("Enter the board size (n): ");
@@ -124,7 +126,7 @@ int main() {
     return 0;
 }
 
-// BFS implementation
+// BFS implementation - Queue-based search algorithm to find the knight's tour path on the board of size n x n
 bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t startTime, int timeLimit) {
     Node** queue = malloc(n * n * n * sizeof(Node*));
     int front = 0, rear = 0;
@@ -211,7 +213,8 @@ bool isValidMove(int x, int y, int n, bool visited[n][n]) {
     return x >= 0 && x < n && y >= 0 && y < n && !visited[x][y];
 }
 
-// Print the board with the knight's path
+// Print the board with the knight's path and move numbers for each square in the path table (1-indexed)
+// Labels for rows and columns in chess notation (a1, b2, etc.)
 void printBoard(int n, Position path[], int steps) {
     int board[n][n];
     for (int i = 0; i < n; i++) {
@@ -260,7 +263,7 @@ void printBoard(int n, Position path[], int steps) {
     printf("\n");
 }
 
-// Print the path as coordinates
+// Print the path as coordinates and chess notation with transitions and locations for each step in the path table
 void printPath(Position path[], int steps) {
     printf("\nKnight's Tour Path:\n");
     printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
@@ -294,14 +297,14 @@ void printPath(Position path[], int steps) {
     printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
 }
 
-// Helper function to center the transition
+// Helper function to center the transition string in the table column for better readability and aesthetics
 char* formatTransition(const char* from, const char* to) {
     static char transition[20];
     snprintf(transition, sizeof(transition), "%s -> %s", from, to);
     return transition;
 }
 
-// Print the expansion tree
+// Print the expansion tree of the search algorithm with indentation for each level of depth in the tree
 void printExpansionTree(Position path[], int steps, int n) {
     printf("Expansion Tree:\n");
     for (int i = 0; i < steps; i++) {
@@ -318,7 +321,7 @@ void printExpansionTree(Position path[], int steps, int n) {
     }
 }
 
-// DFS implementation (unchanged from previous code)
+// DFS implementation - Backtracking search algorithm to find the knight's tour path on the board of size n x n
 bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, int* nodesExpanded, time_t startTime, int timeLimit) {
     if (difftime(time(NULL), startTime) >= timeLimit) return false; // Timeout
     (*nodesExpanded)++;
@@ -338,7 +341,7 @@ bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, in
     return false;
 }
 
-// Warnsdorff's rule heuristic (h1b)
+// Warnsdorff's rule heuristic (h1b) - Number of valid moves from a square
 int heuristicH1b(int x, int y, int n, bool visited[n][n]) {
     int count = 0;
     for (int i = 0; i < 8; i++) {
@@ -348,14 +351,14 @@ int heuristicH1b(int x, int y, int n, bool visited[n][n]) {
     return count;
 }
 
-// Enhanced heuristic (h2)
+// Enhanced heuristic (h2)  - h1b * 10 + corner distance
 int heuristicH2(int x, int y, int n, bool visited[n][n]) {
     int h1bValue = heuristicH1b(x, y, n, visited);
     int cornerDist = abs(x - n / 2) + abs(y - n / 2); // Approximation for corner preference
     return h1bValue * 10 + cornerDist;
 }
 
-// DFS with heuristic (from previous code)
+// DFS with heuristic implementation
 bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), int* nodesExpanded, time_t startTime, int timeLimit) {
     if (difftime(time(NULL), startTime) >= timeLimit) return false; // Timeout
     (*nodesExpanded)++;
