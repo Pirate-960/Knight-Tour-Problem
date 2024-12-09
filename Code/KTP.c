@@ -216,6 +216,12 @@ bool isValidMove(int x, int y, int n, bool visited[n][n]) {
 // Print the board with the knight's path and move numbers for each square in the path table (1-indexed)
 // Labels for rows and columns in chess notation (a1, b2, etc.)
 void printBoard(int n, Position path[], int steps) {
+    FILE *file = fopen("../Output/Chess Board.txt", "w");
+    if (!file) {
+        perror("Error opening file..!");
+        return;
+    }
+
     int board[n][n];
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -226,48 +232,76 @@ void printBoard(int n, Position path[], int steps) {
         board[path[i].x][path[i].y] = i + 1;
     }
 
+    fprintf(file, "   ");
     printf("   ");
     for (int j = 0; j < n; j++) {
-        printf("  %c  ", 'a' + j); // Column labels
+        fprintf(file, "  %c  ", 'a' + j); 
+        printf("  %c  ", 'a' + j); 
     }
+    fprintf(file, "\n");
     printf("\n");
 
     for (int i = 0; i < n; i++) {
+        fprintf(file, "   ");
         printf("   ");
         for (int j = 0; j < n; j++) {
+            fprintf(file, "-----");
             printf("-----");
         }
+        fprintf(file, "-\n");
         printf("-\n");
 
-        printf(" %2d ", n - i); // Row labels
+        fprintf(file, " %2d ", n - i);
+        printf(" %2d ", n - i);
         for (int j = 0; j < n; j++) {
             if (board[i][j] == -1) {
-                printf("|  X "); // Empty square
+                fprintf(file, "|  X ");
+                printf("|  X ");
             } else {
-                printf("|%3d ", board[i][j]); // Move number
+                fprintf(file, "|%3d ", board[i][j]);
+                printf("|%3d ", board[i][j]);
             }
         }
+        fprintf(file, "|\n");
         printf("|\n");
     }
 
+    fprintf(file, "   ");
     printf("   ");
     for (int j = 0; j < n; j++) {
+        fprintf(file, "-----");
         printf("-----");
     }
+    fprintf(file, "-\n");
     printf("-\n");
 
+    fprintf(file, "   ");
     printf("   ");
     for (int j = 0; j < n; j++) {
-        printf("  %c  ", 'a' + j); // Column labels
+        fprintf(file, "  %c  ", 'a' + j);
+        printf("  %c  ", 'a' + j);
     }
+    fprintf(file, "\n");
     printf("\n");
+
+    fclose(file);
 }
 
 // Print the path as coordinates and chess notation with transitions and locations for each step in the path table
 void printPath(Position path[], int steps) {
+    FILE *file = fopen("../Output/Path.txt", "w");
+    if (!file) {
+        perror("Error opening file..!");
+        return;
+    }
+
+    fprintf(file, "\nKnight's Tour Path:\n");
     printf("\nKnight's Tour Path:\n");
+    fprintf(file, "+-------+----------------+-------------------------+-------------------------+-----------------+\n");
     printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
+    fprintf(file, "| Step  | Current Square |       Next Square       | Transition (Chess Not.) | Location (x, y) |\n");
     printf("| Step  | Current Square |       Next Square       | Transition (Chess Not.) | Location (x, y) |\n");
+    fprintf(file, "+-------+----------------+-------------------------+-------------------------+-----------------+\n");
     printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
 
     for (int i = 0; i < steps; i++) {
@@ -275,26 +309,23 @@ void printPath(Position path[], int steps) {
         indexToChessNotation(path[i], currentNotation);
 
         if (i < steps - 1) {
-            // For intermediate moves, calculate transition
             indexToChessNotation(path[i + 1], nextNotation);
+            fprintf(file, "| %5d | %14s | %23s | %19s     | %13d   |\n",
+                    i + 1, currentNotation, nextNotation, formatTransition(currentNotation, nextNotation), (path[i].x + 1) * 10 + (path[i].y + 1));
             printf("| %5d | %14s | %23s | %19s     | %13d   |\n",
-                   i + 1, 
-                   currentNotation, 
-                   nextNotation, 
-                   formatTransition(currentNotation, nextNotation),
-                   (path[i].x + 1) * 10 + (path[i].y + 1));
+                    i + 1, currentNotation, nextNotation, formatTransition(currentNotation, nextNotation), (path[i].x + 1) * 10 + (path[i].y + 1));
         } else {
-            // Last move, no next location or transition
+            fprintf(file, "| %5d | %14s | %23s | %19s     | %13d   |\n",
+                    i + 1, currentNotation, "None", "None", (path[i].x + 1) * 10 + (path[i].y + 1));
             printf("| %5d | %14s | %23s | %19s     | %13d   |\n",
-                   i + 1, 
-                   currentNotation, 
-                   "None", 
-                   "None", 
-                   (path[i].x + 1) * 10 + (path[i].y + 1));
+                    i + 1, currentNotation, "None", "None", (path[i].x + 1) * 10 + (path[i].y + 1));
         }
     }
 
+    fprintf(file, "+-------+----------------+-------------------------+-------------------------+-----------------+\n");
     printf("+-------+----------------+-------------------------+-------------------------+-----------------+\n");
+
+    fclose(file);
 }
 
 // Helper function to center the transition string in the table column for better readability and aesthetics
@@ -306,19 +337,31 @@ char* formatTransition(const char* from, const char* to) {
 
 // Print the expansion tree of the search algorithm with indentation for each level of depth in the tree
 void printExpansionTree(Position path[], int steps, int n) {
+    FILE *file = fopen("../Output/Expansion Tree.txt", "w");
+    if (!file) {
+        perror("Error opening file..!");
+        return;
+    }
+
+    fprintf(file, "Expansion Tree:\n");
     printf("Expansion Tree:\n");
     for (int i = 0; i < steps; i++) {
         for (int j = 0; j < i; j++) {
-            printf("   "); // Indentation
+            fprintf(file, "   ");
+            printf("   ");
         }
         char notation[4];
         indexToChessNotation(path[i], notation);
         if (i == steps - 1) {
-            printf("`-- %s *\n", notation); // Highlight the final move
+            fprintf(file, "`-- %s *\n", notation);
+            printf("`-- %s *\n", notation);
         } else {
+            fprintf(file, "|-- %s\n", notation);
             printf("|-- %s\n", notation);
         }
     }
+
+    fclose(file);
 }
 
 // DFS implementation - Backtracking search algorithm to find the knight's tour path on the board of size n x n
