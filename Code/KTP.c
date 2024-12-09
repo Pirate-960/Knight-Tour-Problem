@@ -76,7 +76,7 @@ int main() {
     path[0] = start;
 
     time_t startTime = time(NULL);
-    int nodesExpanded = 0;
+    long long int nodesExpanded = 0;
     bool solved = false;
 
     printf("Search Method: %d, Time Limit: %d seconds\n", method, timeLimit);
