@@ -30,17 +30,17 @@ void freeQueue(Node** queue, int* front, int* rear);
 void indexToChessNotation(Position pos, char* notation);
 
 // BFS implementation - Queue-based search algorithm to find the knight's tour path on the board of size n x n
-bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t startTime, int timeLimit);
+bool bfs(int n, bool visited[n][n], Position path[], long long int* nodesExpanded, time_t startTime, int timeLimit);
 
 // DFS implementation - Backtracking search algorithm to find the knight's tour path on the board of size n x n
-bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, int* nodesExpanded, time_t startTime, int timeLimit);
+bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, long long int* nodesExpanded, time_t startTime, int timeLimit);
 
 /** Heuristic implementations for DFS with heuristic search algorithms (Warnsdorff's Rule and Enhanced Heuristic) 
  *  to find the knight's tour path on the board of size n x n with a given heuristic function for prioritizing moves 
  *  based on the number of valid moves and corner distance from the center of the board respectively **/
 int heuristicH1b(int x, int y, int n, bool visited[n][n]);
 int heuristicH2(int x, int y, int n, bool visited[n][n]);
-bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), int* nodesExpanded, time_t startTime, int timeLimit);
+bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), long long int* nodesExpanded, time_t startTime, int timeLimit);
 
 // Main Function - Entry point of the program to get user input and run the search algorithm based on the chosen method and time limit in seconds
 int main() {
@@ -127,7 +127,7 @@ int main() {
 }
 
 // BFS implementation - Queue-based search algorithm to find the knight's tour path on the board of size n x n
-bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t startTime, int timeLimit) {
+bool bfs(int n, bool visited[n][n], Position path[], long long int* nodesExpanded, time_t startTime, int timeLimit) {
     Node** queue = malloc(n * n * n * sizeof(Node*));
     int front = 0, rear = 0;
     *nodesExpanded = 0;
@@ -198,6 +198,88 @@ bool bfs(int n, bool visited[n][n], Position path[], int* nodesExpanded, time_t 
     return false;
 }
 
+// DFS implementation - Backtracking search algorithm to find the knight's tour path on the board of size n x n
+bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, long long int* nodesExpanded, time_t startTime, int timeLimit) {
+    if (difftime(time(NULL), startTime) >= timeLimit) return false; // Timeout
+    (*nodesExpanded)++;
+    if (depth == n * n) return true;
+
+    for (int i = 0; i < 8; i++) {
+        int nx = x + dx[i], ny = y + dy[i];
+        if (isValidMove(nx, ny, n, visited)) {
+            visited[nx][ny] = true;
+            path[depth] = (Position){nx, ny};
+            if (dfs(nx, ny, n, visited, path, depth + 1, nodesExpanded, startTime, timeLimit)) {
+                return true;
+            }
+            visited[nx][ny] = false;
+        }
+    }
+    return false;
+}
+
+// Warnsdorff's rule heuristic (h1b) - Number of valid moves from a square
+int heuristicH1b(int x, int y, int n, bool visited[n][n]) {
+    int count = 0;
+    for (int i = 0; i < 8; i++) {
+        int nx = x + dx[i], ny = y + dy[i];
+        if (isValidMove(nx, ny, n, visited)) count++;
+    }
+    return count;
+}
+
+// Enhanced heuristic (h2)  - h1b * 10 + corner distance
+int heuristicH2(int x, int y, int n, bool visited[n][n]) {
+    int h1bValue = heuristicH1b(x, y, n, visited);
+    int cornerDist = abs(x - n / 2) + abs(y - n / 2); // Approximation for corner preference
+    return h1bValue * 10 + cornerDist;
+}
+
+// DFS with heuristic implementation
+bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), long long int* nodesExpanded, time_t startTime, int timeLimit) {
+    if (difftime(time(NULL), startTime) >= timeLimit) return false; // Timeout
+    (*nodesExpanded)++;
+    if (depth == n * n) return true;
+
+    Position moves[8];
+    int scores[8], moveCount = 0;
+
+    for (int i = 0; i < 8; i++) {
+        int nx = x + dx[i], ny = y + dy[i];
+        if (isValidMove(nx, ny, n, visited)) {
+            moves[moveCount] = (Position){nx, ny};
+            scores[moveCount] = heuristic(nx, ny, n, visited);
+            moveCount++;
+        }
+    }
+
+    // Sort moves based on heuristic scores
+    for (int i = 0; i < moveCount - 1; i++) {
+        for (int j = i + 1; j < moveCount; j++) {
+            if (scores[i] > scores[j]) {
+                int tempScore = scores[i];
+                scores[i] = scores[j];
+                scores[j] = tempScore;
+
+                Position tempPos = moves[i];
+                moves[i] = moves[j];
+                moves[j] = tempPos;
+            }
+        }
+    }
+
+    for (int i = 0; i < moveCount; i++) {
+        int nx = moves[i].x, ny = moves[i].y;
+        visited[nx][ny] = true;
+        path[depth] = (Position){nx, ny};
+        if (dfsHeuristic(nx, ny, n, visited, path, depth + 1, heuristic, nodesExpanded, startTime, timeLimit)) {
+            return true;
+        }
+        visited[nx][ny] = false;
+    }
+    return false;
+}
+
 // Utility function to free queue and prevent memory leaks
 void freeQueue(Node** queue, int* front, int* rear) {
     while (*front < *rear) {
@@ -216,7 +298,7 @@ bool isValidMove(int x, int y, int n, bool visited[n][n]) {
 // Print the board with the knight's path and move numbers for each square in the path table (1-indexed)
 // Labels for rows and columns in chess notation (a1, b2, etc.)
 void printBoard(int n, Position path[], int steps) {
-    FILE *file = fopen("../Output/Chess Board.txt", "w");
+    FILE *file = fopen("../../Output/Output - Graph-Search-Algorithm/Chess Board.txt", "w");
     if (!file) {
         perror("Error opening file..!");
         return;
@@ -289,7 +371,7 @@ void printBoard(int n, Position path[], int steps) {
 
 // Print the path as coordinates and chess notation with transitions and locations for each step in the path table
 void printPath(Position path[], int steps) {
-    FILE *file = fopen("../Output/Path.txt", "w");
+    FILE *file = fopen("../../Output/Output - Graph-Search-Algorithm/Path.txt", "w");
     if (!file) {
         perror("Error opening file..!");
         return;
@@ -337,7 +419,7 @@ char* formatTransition(const char* from, const char* to) {
 
 // Print the expansion tree of the search algorithm with indentation for each level of depth in the tree
 void printExpansionTree(Position path[], int steps, int n) {
-    FILE *file = fopen("../Output/Expansion Tree.txt", "w");
+    FILE *file = fopen("../../Output/Output - Graph-Search-Algorithm/Expansion Tree.txt", "w");
     if (!file) {
         perror("Error opening file..!");
         return;
@@ -362,88 +444,6 @@ void printExpansionTree(Position path[], int steps, int n) {
     }
 
     fclose(file);
-}
-
-// DFS implementation - Backtracking search algorithm to find the knight's tour path on the board of size n x n
-bool dfs(int x, int y, int n, bool visited[n][n], Position path[], int depth, int* nodesExpanded, time_t startTime, int timeLimit) {
-    if (difftime(time(NULL), startTime) >= timeLimit) return false; // Timeout
-    (*nodesExpanded)++;
-    if (depth == n * n) return true;
-
-    for (int i = 0; i < 8; i++) {
-        int nx = x + dx[i], ny = y + dy[i];
-        if (isValidMove(nx, ny, n, visited)) {
-            visited[nx][ny] = true;
-            path[depth] = (Position){nx, ny};
-            if (dfs(nx, ny, n, visited, path, depth + 1, nodesExpanded, startTime, timeLimit)) {
-                return true;
-            }
-            visited[nx][ny] = false;
-        }
-    }
-    return false;
-}
-
-// Warnsdorff's rule heuristic (h1b) - Number of valid moves from a square
-int heuristicH1b(int x, int y, int n, bool visited[n][n]) {
-    int count = 0;
-    for (int i = 0; i < 8; i++) {
-        int nx = x + dx[i], ny = y + dy[i];
-        if (isValidMove(nx, ny, n, visited)) count++;
-    }
-    return count;
-}
-
-// Enhanced heuristic (h2)  - h1b * 10 + corner distance
-int heuristicH2(int x, int y, int n, bool visited[n][n]) {
-    int h1bValue = heuristicH1b(x, y, n, visited);
-    int cornerDist = abs(x - n / 2) + abs(y - n / 2); // Approximation for corner preference
-    return h1bValue * 10 + cornerDist;
-}
-
-// DFS with heuristic implementation
-bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), int* nodesExpanded, time_t startTime, int timeLimit) {
-    if (difftime(time(NULL), startTime) >= timeLimit) return false; // Timeout
-    (*nodesExpanded)++;
-    if (depth == n * n) return true;
-
-    Position moves[8];
-    int scores[8], moveCount = 0;
-
-    for (int i = 0; i < 8; i++) {
-        int nx = x + dx[i], ny = y + dy[i];
-        if (isValidMove(nx, ny, n, visited)) {
-            moves[moveCount] = (Position){nx, ny};
-            scores[moveCount] = heuristic(nx, ny, n, visited);
-            moveCount++;
-        }
-    }
-
-    // Sort moves based on heuristic scores
-    for (int i = 0; i < moveCount - 1; i++) {
-        for (int j = i + 1; j < moveCount; j++) {
-            if (scores[i] > scores[j]) {
-                int tempScore = scores[i];
-                scores[i] = scores[j];
-                scores[j] = tempScore;
-
-                Position tempPos = moves[i];
-                moves[i] = moves[j];
-                moves[j] = tempPos;
-            }
-        }
-    }
-
-    for (int i = 0; i < moveCount; i++) {
-        int nx = moves[i].x, ny = moves[i].y;
-        visited[nx][ny] = true;
-        path[depth] = (Position){nx, ny};
-        if (dfsHeuristic(nx, ny, n, visited, path, depth + 1, heuristic, nodesExpanded, startTime, timeLimit)) {
-            return true;
-        }
-        visited[nx][ny] = false;
-    }
-    return false;
 }
 
 // Convert index to chess notation
