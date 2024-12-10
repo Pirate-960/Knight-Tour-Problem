@@ -298,7 +298,7 @@ bool isValidMove(int x, int y, int n, bool visited[n][n]) {
 // Print the board with the knight's path and move numbers for each square in the path table (1-indexed)
 // Labels for rows and columns in chess notation (a1, b2, etc.)
 void printBoard(int n, Position path[], int steps) {
-    FILE *file = fopen("../../Output/Output - Graph-Search-Algorithm/Chess Board.txt", "w");
+    FILE *file = fopen("../../../Output/Output - Graph-Search-Algorithm/Chess Board.txt", "w");
     if (!file) {
         perror("Error opening file..!");
         return;
@@ -371,7 +371,7 @@ void printBoard(int n, Position path[], int steps) {
 
 // Print the path as coordinates and chess notation with transitions and locations for each step in the path table
 void printPath(Position path[], int steps) {
-    FILE *file = fopen("../../Output/Output - Graph-Search-Algorithm/Path.txt", "w");
+    FILE *file = fopen("../../../Output/Output - Graph-Search-Algorithm/Path.txt", "w");
     if (!file) {
         perror("Error opening file..!");
         return;
@@ -419,7 +419,7 @@ char* formatTransition(const char* from, const char* to) {
 
 // Print the expansion tree of the search algorithm with indentation for each level of depth in the tree
 void printExpansionTree(Position path[], int steps, int n) {
-    FILE *file = fopen("../../Output/Output - Graph-Search-Algorithm/Expansion Tree.txt", "w");
+    FILE *file = fopen("../../../Output/Output - Graph-Search-Algorithm/Expansion Tree.txt", "w");
     if (!file) {
         perror("Error opening file..!");
         return;
