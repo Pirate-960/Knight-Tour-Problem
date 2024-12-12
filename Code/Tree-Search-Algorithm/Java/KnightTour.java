@@ -1,178 +1,238 @@
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 public class KnightTour {
-    static class Node {
-        int x, y, depth;
-        Node parent;
-        int[][] board;
-        Set<String> visited;
 
-        public Node(int x, int y, int depth, Node parent, int[][] board, Set<String> visited) {
+    // Constants for knight's moves
+    private static final int[][] MOVES = {
+        {-2, 1}, {-1, 2}, {1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}
+    };
+
+    // Class to represent a board position and state
+    static class Node {
+        Position position;
+        boolean[][] visited;
+        int[][] board;
+        int moveNumber;
+
+        Node(Position position, boolean[][] visited, int[][] board, int moveNumber) {
+            this.position = position;
+            this.visited = deepCopy(visited);
+            this.board = deepCopy(board);
+            this.moveNumber = moveNumber;
+        }
+
+        private boolean[][] deepCopy(boolean[][] original) {
+            boolean[][] copy = new boolean[original.length][original[0].length];
+            for (int i = 0; i < original.length; i++) {
+                System.arraycopy(original[i], 0, copy[i], 0, original[i].length);
+            }
+            return copy;
+        }
+
+        private int[][] deepCopy(int[][] original) {
+            int[][] copy = new int[original.length][original[0].length];
+            for (int i = 0; i < original.length; i++) {
+                System.arraycopy(original[i], 0, copy[i], 0, original[i].length);
+            }
+            return copy;
+        }
+    }
+
+    static class Position {
+        int x, y;
+
+        Position(int x, int y) {
             this.x = x;
             this.y = y;
-            this.depth = depth;
-            this.parent = parent;
-
-            // Deep copy of board state
-            this.board = new int[board.length][board[0].length];
-            for (int i = 0; i < board.length; i++) {
-                this.board[i] = board[i].clone();
-            }
-
-            // Deep copy of visited set
-            this.visited = new HashSet<>(visited);
         }
     }
 
-    static class Problem {
-        int n; // Board size
-        int[][] moves = {{-2, -1}, {-1, -2}, {1, -2}, {2, -1}, {2, 1}, {1, 2}, {-1, 2}, {-2, 1}};
-
-        public Problem(int n) {
-            this.n = n;
-        }
-
-        boolean isGoal(Node node) {
-            return node.depth == n * n;
-        }
-
-        List<Node> expand(Node node) {
-            List<Node> children = new ArrayList<>();
-            for (int[] move : moves) {
-                int newX = node.x + move[0];
-                int newY = node.y + move[1];
-                if (isValid(newX, newY, node)) {
-                    Node child = new Node(newX, newY, node.depth + 1, node, node.board, node.visited);
-                    child.board[newX][newY] = child.depth; // Mark as visited
-                    child.visited.add(newX + "," + newY);
-                    children.add(child);
-                }
-            }
-            return children;
-        }
-
-        boolean isValid(int x, int y, Node node) {
-            return x >= 0 && y >= 0 && x < n && y < n && node.board[x][y] == 0 && !node.visited.contains(x + "," + y);
-        }
-
-        void printBoard(int[][] board) {
-            for (int i = 0; i < board.length; i++) {
-                for (int j = 0; j < board[i].length; j++) {
-                    System.out.print(board[i][j] + "\t");
-                }
-                System.out.println();
-            }
-        }
-    }
-
-    static long timeLimitMillis;
-
-    static Node treeSearch(Problem problem, String strategy) {
-        Deque<Node> frontier;
-        if ("BFS".equalsIgnoreCase(strategy)) {
-            frontier = new LinkedList<>(); // Queue for BFS
-        } else {
-            frontier = new ArrayDeque<>(); // Stack for DFS
-        }
-
-        int[][] initialBoard = new int[problem.n][problem.n];
-        Set<String> initialVisited = new HashSet<>();
-        Node startNode = new Node(problem.n - 1, 0, 1, null, initialBoard, initialVisited);
-        startNode.board[startNode.x][startNode.y] = 1;
-        startNode.visited.add(startNode.x + "," + startNode.y);
-        frontier.add(startNode);
-
+    // Main Tree-Search Framework
+    public static String treeSearch(int n, char method, long timeLimit) {
         long startTime = System.currentTimeMillis();
+
+        // Frontier: nodes to be visited
+        Deque<Node> frontier = new ArrayDeque<>();
+
+        // Initialize starting node
+        boolean[][] visited = new boolean[n][n];
+        int[][] board = new int[n][n];
+        Position start = new Position(0, 0);
+        visited[0][0] = true;
+        board[0][0] = 1;
+        frontier.add(new Node(start, visited, board, 1));
+
+        // List to store transitions
+        List<String> transitions = new ArrayList<>();
+        transitions.add("Start: (0, 0)");
+
+        // Nodes expanded counter
         int nodesExpanded = 0;
 
         while (!frontier.isEmpty()) {
-            if ((System.currentTimeMillis() - startTime) > timeLimitMillis) {
-                System.out.println("Timeout.");
-                problem.printBoard(frontier.peek().board);
-                System.out.println("Nodes Expanded: " + nodesExpanded);
-                return null;
+            // Timeout check
+            if (System.currentTimeMillis() - startTime > timeLimit * 1000) {
+                return "Timeout.";
             }
 
-            // Poll the next node
-            Node node = "DFS".equalsIgnoreCase(strategy)
-                    ? ((ArrayDeque<Node>) frontier).pollLast() // DFS (LIFO)
-                    : frontier.poll(); // BFS (FIFO)
-
-            // Debugging: Print the node being processed
-            System.out.println("Processing Node: (" + node.x + ", " + node.y + "), Depth: " + node.depth);
-
-            if (problem.isGoal(node)) {
-                System.out.println("Nodes Expanded: " + nodesExpanded);
-                long endTime = System.currentTimeMillis();
-                System.out.println("Time spent: " + (endTime - startTime) / 1000.0 + " seconds");
-                return node;
+            // Choose the node to expand based on the search method
+            Node current;
+            if (method == 'a') { // Breadth-First Search
+                current = frontier.pollFirst();
+            } else if (method == 'b') { // Depth-First Search
+                current = frontier.pollLast();
+            } else { // DFS with Heuristics (c: h1b, d: h2)
+                current = selectWithHeuristic(frontier, n, method);
+                frontier.remove(current);
             }
 
-            List<Node> children = problem.expand(node);
             nodesExpanded++;
 
-            // Debugging: Print the children being expanded
-            System.out.print("Expanding Children: ");
-            for (Node child : children) {
-                System.out.print("(" + child.x + ", " + child.y + ") ");
+            // Check if all squares have been visited (goal state)
+            if (allVisited(current.visited)) {
+                printTour(current.board, transitions, n);
+                printFinalBoard(current.board, n);
+                return "A solution found.\nNodes Expanded: " + nodesExpanded;
             }
-            System.out.println();
 
-            frontier.addAll(children);
+            // Expand the current node
+            for (int[] move : MOVES) {
+                int newX = current.position.x + move[0];
+                int newY = current.position.y + move[1];
+
+                if (isValidMove(newX, newY, n, current.visited)) {
+                    boolean[][] newVisited = current.visited;
+                    int[][] newBoard = current.board;
+                    newVisited[newX][newY] = true;
+                    newBoard[newX][newY] = current.moveNumber + 1;
+
+                    frontier.add(new Node(new Position(newX, newY), newVisited, newBoard, current.moveNumber + 1));
+                    transitions.add("Move " + (current.moveNumber + 1) + ": (" + current.position.x + ", " + current.position.y + ") -> (" + newX + ", " + newY + ")");
+                }
+            }
         }
 
-        System.out.println("No solution exists.");
-        problem.printBoard(frontier.peek().board);
-        System.out.println("Nodes Expanded: " + nodesExpanded);
-        return null;
+        return "No solution exists.";
     }
 
-    static String toChessNotation(int x, int y, int n) {
-        char column = (char) ('a' + y);
-        int row = n - x;
-        return "" + column + row;
+    // Heuristic-based selection
+    private static Node selectWithHeuristic(Deque<Node> frontier, int n, char method) {
+        Node best = null;
+        int bestScore = Integer.MAX_VALUE;
+
+        for (Node node : frontier) {
+            int score = (method == 'c') ? h1b(node.position, node.visited, n) : h2(node.position, node.visited, n);
+            if (score < bestScore) {
+                bestScore = score;
+                best = node;
+            }
+        }
+
+        return best;
+    }
+
+    // h1b: Warnsdorff's rule
+    private static int h1b(Position pos, boolean[][] visited, int n) {
+        int count = 0;
+        for (int[] move : MOVES) {
+            int newX = pos.x + move[0];
+            int newY = pos.y + move[1];
+            if (isValidMove(newX, newY, n, visited)) {
+                count++;
+            }
+        }
+        return count; // Fewer onward moves mean higher priority
+    }
+
+    // h2: Enhanced heuristic (Warnsdorff + proximity to corners)
+    private static int h2(Position pos, boolean[][] visited, int n) {
+        int count = h1b(pos, visited, n); // Use h1b as the base score
+
+        // Calculate proximity to the nearest corner
+        int[] cornerDistances = {
+            pos.x + pos.y,                             // (0,0)
+            pos.x + (n - 1 - pos.y),                   // (0,N-1)
+            (n - 1 - pos.x) + pos.y,                   // (N-1,0)
+            (n - 1 - pos.x) + (n - 1 - pos.y)          // (N-1,N-1)
+        };
+
+        int minDistance = Arrays.stream(cornerDistances).min().orElse(Integer.MAX_VALUE);
+        return count + minDistance; // Combine Warnsdorff's rule with proximity
+    }
+
+    // Helper function to check if all squares are visited
+    private static boolean allVisited(boolean[][] visited) {
+        for (boolean[] row : visited) {
+            for (boolean cell : row) {
+                if (!cell) return false;
+            }
+        }
+        return true;
+    }
+
+    // Helper function to check if a move is valid
+    private static boolean isValidMove(int x, int y, int n, boolean[][] visited) {
+        return x >= 0 && y >= 0 && x < n && y < n && !visited[x][y];
+    }
+
+    // Print the tour and save to file
+    private static void printTour(int[][] tour, List<String> transitions, int n) {
+        try (FileWriter writer = new FileWriter("knights_tour_output.txt")) {
+            // Print transitions
+            System.out.println("Transitions:");
+            writer.write("Transitions:\n");
+            for (String transition : transitions) {
+                System.out.println(transition);
+                writer.write(transition + "\n");
+            }
+
+            // Print the final board
+            System.out.println("\nFinal Board:");
+            writer.write("\nFinal Board:\n");
+            for (int[] row : tour) {
+                for (int cell : row) {
+                    System.out.print(String.format("%2d ", cell));
+                    writer.write(String.format("%2d ", cell));
+                }
+                System.out.println();
+                writer.write("\n");
+            }
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+        }
+    }
+
+    // Print the final board directly to the console
+    private static void printFinalBoard(int[][] board, int n) {
+        System.out.println("\nFinal Board State:");
+        System.out.println("+" + "-".repeat(n * 4 - 1) + "+");
+        for (int[] row : board) {
+            System.out.print("|");
+            for (int cell : row) {
+                System.out.print(String.format(" %2d |", cell));
+            }
+            System.out.println();
+            System.out.println("+" + "-".repeat(n * 4 - 1) + "+");
+        }
     }
 
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
+
         System.out.println("Enter board size (n): ");
-        int n = sc.nextInt();
+        int n = scanner.nextInt();
 
-        System.out.println("Enter search method (a: BFS, b: DFS): ");
-        String method = sc.next();
-        switch (method.toLowerCase()) {
-            case "a" -> method = "BFS";
-            case "b" -> method = "DFS";
-            default -> {
-                System.out.println("Invalid method. Defaulting to BFS.");
-                method = "BFS";
-            }
-        }
+        System.out.println("Enter search method (a: BFS, b: DFS, c: DFS with h1b, d: DFS with h2): ");
+        char method = scanner.next().charAt(0);
 
-        System.out.println("Enter time limit (minutes): ");
-        int timeLimitMinutes = sc.nextInt();
-        timeLimitMillis = timeLimitMinutes * 60 * 1000L;
+        System.out.println("Enter time limit (in seconds): ");
+        long timeLimit = scanner.nextLong();
 
-        System.out.println("Search Method: " + method);
-        System.out.println("Time Limit: " + timeLimitMinutes + " minutes");
+        String result = treeSearch(n, method, timeLimit);
+        System.out.println("Result: " + result);
 
-        Problem problem = new Problem(n);
-        Node result = treeSearch(problem, method);
-
-        if (result != null) {
-            System.out.println("A solution found.");
-            List<String> path = new ArrayList<>();
-            while (result != null) {
-                path.add(toChessNotation(result.x, result.y, n));
-                result = result.parent;
-            }
-            Collections.reverse(path);
-            System.out.println("Path: " + String.join(" -> ", path));
-            problem.printBoard(result.board);
-        } else {
-            System.out.println("No solution or timeout.");
-        }
-
-        sc.close();
+        scanner.close();
     }
 }
