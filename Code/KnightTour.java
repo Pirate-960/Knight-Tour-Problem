@@ -134,15 +134,12 @@ public class KnightTour {
         System.out.println("Enter search method (a: BFS, b: DFS): ");
         String method = sc.next();
         switch (method.toLowerCase()) {
-            case "a":
-                method = "BFS";
-                break;
-            case "b":
-                method = "DFS";
-                break;
-            default:
+            case "a" -> method = "BFS";
+            case "b" -> method = "DFS";
+            default -> {
                 System.out.println("Invalid method. Defaulting to BFS.");
                 method = "BFS";
+            }
         }
     
         System.out.println("Enter time limit (minutes): ");
@@ -169,5 +166,7 @@ public class KnightTour {
         } else {
             System.out.println("No solution or timeout.");
         }
+
+        sc.close();
     }
 }
