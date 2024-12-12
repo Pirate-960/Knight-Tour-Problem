@@ -101,14 +101,14 @@ int main() {
             return 1;
     }
 
+    // Always generate output files
     if (solved) {
         printf("A solution was found!\n");
-        printf("Nodes Expanded: %d\n", nodesExpanded);
+        printf("Nodes Expanded: %lld\n", nodesExpanded);
         printf("Time spent: %.2f seconds\n", difftime(time(NULL), startTime));
         printf("Coordinates of the tour:\n");
         printPath(path, n * n);
         printExpansionTree(path, n * n, n);
-        printf("Board representation:\n");
         printBoard(n, path, n * n);
     } else {
         if (difftime(time(NULL), startTime) >= timeLimit) {
@@ -116,7 +116,13 @@ int main() {
         } else {
             printf("No solution exists.\n");
         }
-        printf("Nodes Expanded: %d\n", nodesExpanded);
+        printf("Nodes Expanded: %lld\n", nodesExpanded);
+
+        // When no solution is found, create output files with partial information
+        // Modify path to include at least the start position
+        printPath(path, 1);
+        printExpansionTree(path, 1, n);
+        printBoard(n, path, 1);
     }
 
     // Free dynamically allocated memory
@@ -237,7 +243,10 @@ int heuristicH2(int x, int y, int n, bool visited[n][n]) {
 
 // DFS with heuristic implementation
 bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int depth, int (*heuristic)(int, int, int, bool[n][n]), long long int* nodesExpanded, time_t startTime, int timeLimit) {
-    if (difftime(time(NULL), startTime) >= timeLimit) return false; // Timeout
+    if (difftime(time(NULL), startTime) >= timeLimit) {
+    return false; // Stop search if time limit exceeded
+    }
+
     (*nodesExpanded)++;
     if (depth == n * n) return true;
 
@@ -253,14 +262,18 @@ bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int 
         }
     }
 
-    // Sort moves based on heuristic scores
+    // Sort moves based on heuristic scores with deterministic tie-breaking
     for (int i = 0; i < moveCount - 1; i++) {
         for (int j = i + 1; j < moveCount; j++) {
-            if (scores[i] > scores[j]) {
+            if (scores[i] > scores[j] || 
+            (scores[i] == scores[j] && (moves[i].x > moves[j].x || 
+            (moves[i].x == moves[j].x && moves[i].y > moves[j].y)))) {
+                // Swap scores
                 int tempScore = scores[i];
                 scores[i] = scores[j];
                 scores[j] = tempScore;
-
+                
+                // Swap moves
                 Position tempPos = moves[i];
                 moves[i] = moves[j];
                 moves[j] = tempPos;
@@ -272,6 +285,7 @@ bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int 
         int nx = moves[i].x, ny = moves[i].y;
         visited[nx][ny] = true;
         path[depth] = (Position){nx, ny};
+        printf("Depth: %d, Move: (%d, %d), Score: %d\n", depth, nx, ny, scores[i]);
         if (dfsHeuristic(nx, ny, n, visited, path, depth + 1, heuristic, nodesExpanded, startTime, timeLimit)) {
             return true;
         }
@@ -279,6 +293,7 @@ bool dfsHeuristic(int x, int y, int n, bool visited[n][n], Position path[], int 
     }
     return false;
 }
+
 
 // Utility function to free queue and prevent memory leaks
 void freeQueue(Node** queue, int* front, int* rear) {
@@ -314,8 +329,8 @@ void printBoard(int n, Position path[], int steps) {
         board[path[i].x][path[i].y] = i + 1;
     }
 
-    fprintf(file, "   ");
-    printf("   ");
+    fprintf(file, "    ");
+    printf("    ");
     for (int j = 0; j < n; j++) {
         fprintf(file, "  %c  ", 'a' + j); 
         printf("  %c  ", 'a' + j); 
@@ -324,8 +339,8 @@ void printBoard(int n, Position path[], int steps) {
     printf("\n");
 
     for (int i = 0; i < n; i++) {
-        fprintf(file, "   ");
-        printf("   ");
+        fprintf(file, "    ");
+        printf("    ");
         for (int j = 0; j < n; j++) {
             fprintf(file, "-----");
             printf("-----");
@@ -333,8 +348,8 @@ void printBoard(int n, Position path[], int steps) {
         fprintf(file, "-\n");
         printf("-\n");
 
-        fprintf(file, " %2d ", n - i);
-        printf(" %2d ", n - i);
+        fprintf(file, " %2d ", i + 1);
+        printf(" %2d ", i + 1);
         for (int j = 0; j < n; j++) {
             if (board[i][j] == -1) {
                 fprintf(file, "|  X ");
@@ -348,8 +363,8 @@ void printBoard(int n, Position path[], int steps) {
         printf("|\n");
     }
 
-    fprintf(file, "   ");
-    printf("   ");
+    fprintf(file, "    ");
+    printf("    ");
     for (int j = 0; j < n; j++) {
         fprintf(file, "-----");
         printf("-----");
@@ -357,8 +372,8 @@ void printBoard(int n, Position path[], int steps) {
     fprintf(file, "-\n");
     printf("-\n");
 
-    fprintf(file, "   ");
-    printf("   ");
+    fprintf(file, "    ");
+    printf("    ");
     for (int j = 0; j < n; j++) {
         fprintf(file, "  %c  ", 'a' + j);
         printf("  %c  ", 'a' + j);
@@ -435,8 +450,8 @@ void printExpansionTree(Position path[], int steps, int n) {
         char notation[4];
         indexToChessNotation(path[i], notation);
         if (i == steps - 1) {
-            fprintf(file, "`-- %s *\n", notation);
-            printf("`-- %s *\n", notation);
+            fprintf(file, "`-- %s %s\n", notation, (steps == n * n) ? "*" : "");
+            printf("`-- %s %s\n", notation, (steps == n * n) ? "*" : "");
         } else {
             fprintf(file, "|-- %s\n", notation);
             printf("|-- %s\n", notation);
