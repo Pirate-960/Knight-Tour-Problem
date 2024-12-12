@@ -127,45 +127,46 @@ public class KnightTour {
     }
 
     public static void main(String[] args) {
-        try (Scanner sc = new Scanner(System.in)) {
-            System.out.println("Enter board size (n): ");
-            int n = sc.nextInt();
-        
-            System.out.println("Enter search method (a: BFS, b: DFS): ");
-            String method = sc.next();
-            switch (method.toLowerCase()) {
-                case "a" -> method = "BFS";
-                case "b" -> method = "DFS";
-                default -> {
-                    System.out.println("Invalid method. Defaulting to BFS.");
-                    method = "BFS";
-                }
-            }
-        
-            System.out.println("Enter time limit (minutes): ");
-            int timeLimitMinutes = sc.nextInt();
-            timeLimitMillis = timeLimitMinutes * 60 * 1000L;
-        
-            System.out.println("Search Method: " + method);
-            System.out.println("Time Limit: " + timeLimitMinutes + " minutes");
-        
-            Problem problem = new Problem(n);
-            Node result = treeSearch(problem, method);
-        
-            if (result != null) {
-                System.out.println("A solution found.");
-                List<String> path = new ArrayList<>();
-                int[][] finalBoard = result.board; // Store the final board state
-                while (result != null) {
-                    path.add(toChessNotation(result.x, result.y, n));
-                    result = result.parent;
-                }
-                Collections.reverse(path);
-                System.out.println("Path: " + String.join(" -> ", path));
-                problem.printBoard(finalBoard); // Print the stored final board state
-            } else {
-                System.out.println("No solution or timeout.");
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter board size (n): ");
+        int n = sc.nextInt();
+    
+        System.out.println("Enter search method (a: BFS, b: DFS): ");
+        String method = sc.next();
+        switch (method.toLowerCase()) {
+            case "a" -> method = "BFS";
+            case "b" -> method = "DFS";
+            default -> {
+                System.out.println("Invalid method. Defaulting to BFS.");
+                method = "BFS";
             }
         }
+    
+        System.out.println("Enter time limit (minutes): ");
+        int timeLimitMinutes = sc.nextInt();
+        timeLimitMillis = timeLimitMinutes * 60 * 1000L;
+    
+        System.out.println("Search Method: " + method);
+        System.out.println("Time Limit: " + timeLimitMinutes + " minutes");
+    
+        Problem problem = new Problem(n);
+        Node result = treeSearch(problem, method);
+    
+        if (result != null) {
+            System.out.println("A solution found.");
+            List<String> path = new ArrayList<>();
+            int[][] finalBoard = result.board; // Store the final board state
+            while (result != null) {
+                path.add(toChessNotation(result.x, result.y, n));
+                result = result.parent;
+            }
+            Collections.reverse(path);
+            System.out.println("Path: " + String.join(" -> ", path));
+            problem.printBoard(finalBoard); // Print the stored final board state
+        } else {
+            System.out.println("No solution or timeout.");
+        }
+
+        sc.close();
     }
 }
