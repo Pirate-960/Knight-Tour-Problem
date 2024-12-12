@@ -9,7 +9,37 @@ public class KnightTour {
         {-2, 1}, {-1, 2}, {1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}
     };
 
-    // Class to represent a board position
+    // Class to represent a board position and state
+    static class Node {
+        Position position;
+        boolean[][] visited;
+        int[][] board;
+        int moveNumber;
+
+        Node(Position position, boolean[][] visited, int[][] board, int moveNumber) {
+            this.position = position;
+            this.visited = deepCopy(visited);
+            this.board = deepCopy(board);
+            this.moveNumber = moveNumber;
+        }
+
+        private boolean[][] deepCopy(boolean[][] original) {
+            boolean[][] copy = new boolean[original.length][original[0].length];
+            for (int i = 0; i < original.length; i++) {
+                System.arraycopy(original[i], 0, copy[i], 0, original[i].length);
+            }
+            return copy;
+        }
+
+        private int[][] deepCopy(int[][] original) {
+            int[][] copy = new int[original.length][original[0].length];
+            for (int i = 0; i < original.length; i++) {
+                System.arraycopy(original[i], 0, copy[i], 0, original[i].length);
+            }
+            return copy;
+        }
+    }
+
     static class Position {
         int x, y;
 
@@ -24,17 +54,15 @@ public class KnightTour {
         long startTime = System.currentTimeMillis();
 
         // Frontier: nodes to be visited
-        Deque<Position> frontier = new ArrayDeque<>();
+        Deque<Node> frontier = new ArrayDeque<>();
 
-        // Track visited nodes
+        // Initialize starting node
         boolean[][] visited = new boolean[n][n];
-        int[][] tour = new int[n][n]; // Track the move number
-
-        // Start from the bottom-left corner (e.g., a1)
+        int[][] board = new int[n][n];
         Position start = new Position(0, 0);
-        frontier.add(start);
         visited[0][0] = true;
-        tour[0][0] = 1;
+        board[0][0] = 1;
+        frontier.add(new Node(start, visited, board, 1));
 
         // List to store transitions
         List<String> transitions = new ArrayList<>();
@@ -50,34 +78,37 @@ public class KnightTour {
             }
 
             // Choose the node to expand based on the search method
-            Position current;
+            Node current;
             if (method == 'a') { // Breadth-First Search
                 current = frontier.pollFirst();
             } else if (method == 'b') { // Depth-First Search
                 current = frontier.pollLast();
             } else { // DFS with Heuristics (c: h1b, d: h2)
-                current = selectWithHeuristic(frontier, visited, n, method);
+                current = selectWithHeuristic(frontier, n, method);
                 frontier.remove(current);
             }
 
             nodesExpanded++;
 
             // Check if all squares have been visited (goal state)
-            if (allVisited(visited)) {
-                printTour(tour, transitions, n);
+            if (allVisited(current.visited)) {
+                printTour(current.board, transitions, n);
                 return "A solution found.\nNodes Expanded: " + nodesExpanded;
             }
 
             // Expand the current node
             for (int[] move : MOVES) {
-                int newX = current.x + move[0];
-                int newY = current.y + move[1];
+                int newX = current.position.x + move[0];
+                int newY = current.position.y + move[1];
 
-                if (isValidMove(newX, newY, n, visited)) {
-                    frontier.add(new Position(newX, newY));
-                    visited[newX][newY] = true;
-                    tour[newX][newY] = tour[current.x][current.y] + 1;
-                    transitions.add("Move " + tour[newX][newY] + ": (" + current.x + ", " + current.y + ") -> (" + newX + ", " + newY + ")");
+                if (isValidMove(newX, newY, n, current.visited)) {
+                    boolean[][] newVisited = current.visited;
+                    int[][] newBoard = current.board;
+                    newVisited[newX][newY] = true;
+                    newBoard[newX][newY] = current.moveNumber + 1;
+
+                    frontier.add(new Node(new Position(newX, newY), newVisited, newBoard, current.moveNumber + 1));
+                    transitions.add("Move " + (current.moveNumber + 1) + ": (" + current.position.x + ", " + current.position.y + ") -> (" + newX + ", " + newY + ")");
                 }
             }
         }
@@ -86,22 +117,22 @@ public class KnightTour {
     }
 
     // Heuristic-based selection
-    private static Position selectWithHeuristic(Deque<Position> frontier, boolean[][] visited, int n, char method) {
-        Position best = null;
+    private static Node selectWithHeuristic(Deque<Node> frontier, int n, char method) {
+        Node best = null;
         int bestScore = Integer.MAX_VALUE;
 
-        for (Position pos : frontier) {
-            int score = (method == 'c') ? h1b(pos, visited, n) : h2(pos, visited, n);
+        for (Node node : frontier) {
+            int score = (method == 'c') ? h1b(node.position, node.visited, n) : h2(node.position, node.visited, n);
             if (score < bestScore) {
                 bestScore = score;
-                best = pos;
+                best = node;
             }
         }
 
         return best;
     }
 
-    // h1b: Warnsdorff rule
+    // h1b: Warnsdorff's rule
     private static int h1b(Position pos, boolean[][] visited, int n) {
         int count = 0;
         for (int[] move : MOVES) {
@@ -111,19 +142,23 @@ public class KnightTour {
                 count++;
             }
         }
-        return count; // Fewer moves mean higher priority
+        return count; // Fewer onward moves mean higher priority
     }
 
-    // h2: Advanced heuristic
+    // h2: Enhanced heuristic (Warnsdorff + proximity to corners)
     private static int h2(Position pos, boolean[][] visited, int n) {
-        int count = h1b(pos, visited, n);
+        int count = h1b(pos, visited, n); // Use h1b as the base score
 
-        // Penalize moves closer to the center (encouraging exploration of edges and corners first)
-        int centerX = n / 2;
-        int centerY = n / 2;
-        int distanceToCenter = Math.abs(pos.x - centerX) + Math.abs(pos.y - centerY);
+        // Calculate proximity to the nearest corner
+        int[] cornerDistances = {
+            pos.x + pos.y,                             // (0,0)
+            pos.x + (n - 1 - pos.y),                   // (0,N-1)
+            (n - 1 - pos.x) + pos.y,                   // (N-1,0)
+            (n - 1 - pos.x) + (n - 1 - pos.y)          // (N-1,N-1)
+        };
 
-        return count + distanceToCenter; // Combine Warnsdorff with distance to center
+        int minDistance = Arrays.stream(cornerDistances).min().orElse(Integer.MAX_VALUE);
+        return count + minDistance; // Combine Warnsdorff's rule with proximity
     }
 
     // Helper function to check if all squares are visited
