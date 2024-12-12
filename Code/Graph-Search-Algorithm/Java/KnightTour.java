@@ -2,7 +2,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
-public class KnightsTour {
+public class KnightTour {
 
     // Constants for knight's moves
     private static final int[][] MOVES = {
