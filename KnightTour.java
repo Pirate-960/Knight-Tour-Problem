@@ -4,19 +4,17 @@ public class KnightTour {
     static class Node {
         int x, y, depth;
         Node parent;
-        int[][] board;
-        Set<String> visited;
+        boolean[][] visited;
 
-        public Node(int x, int y, int depth, Node parent, int[][] board, Set<String> visited) {
+        public Node(int x, int y, int depth, Node parent, boolean[][] visited) {
             this.x = x;
             this.y = y;
             this.depth = depth;
             this.parent = parent;
-            this.board = new int[board.length][board.length];
-            for (int i = 0; i < board.length; i++) {
-                this.board[i] = board[i].clone();
+            this.visited = new boolean[visited.length][visited.length];
+            for (int i = 0; i < visited.length; i++) {
+                this.visited[i] = visited[i].clone();
             }
-            this.visited = new HashSet<>(visited);
         }
 
         // h1b: Number of valid moves from the current position
@@ -61,27 +59,31 @@ public class KnightTour {
                 int newX = node.x + move[0];
                 int newY = node.y + move[1];
                 if (isValid(node, newX, newY)) {
-                    int[][] newBoard = new int[n][n];
+                    boolean[][] newVisited = new boolean[n][n];
                     for (int i = 0; i < n; i++) {
-                        newBoard[i] = node.board[i].clone();
+                        newVisited[i] = node.visited[i].clone();
                     }
-                    Set<String> newVisited = new HashSet<>(node.visited);
-                    newBoard[newX][newY] = node.depth + 1;
-                    newVisited.add(newX + "," + newY);
-                    children.add(new Node(newX, newY, node.depth + 1, node, newBoard, newVisited));
+                    newVisited[newX][newY] = true;
+                    children.add(new Node(newX, newY, node.depth + 1, node, newVisited));
                 }
             }
             return children;
         }
 
         boolean isValid(Node node, int x, int y) {
-            return x >= 0 && y >= 0 && x < n && y < n && !node.visited.contains(x + "," + y);
+            return x >= 0 && y >= 0 && x < n && y < n && !node.visited[x][y];
         }
 
-        void printBoard(int[][] board) {
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    System.out.print(board[i][j] + "\t");
+        void printBoardFromPath(Node node) {
+            int[][] board = new int[n][n];
+            int step = n * n;
+            while (node != null) {
+                board[node.x][node.y] = step--;
+                node = node.parent;
+            }
+            for (int[] row : board) {
+                for (int cell : row) {
+                    System.out.print(cell + "\t");
                 }
                 System.out.println();
             }
@@ -92,9 +94,9 @@ public class KnightTour {
 
     static Node treeSearch(Problem problem, String strategy) {
         Deque<Node> frontier = new ArrayDeque<>();
-        Node startNode = new Node(problem.n - 1, 0, 1, null, new int[problem.n][problem.n], new HashSet<>());
-        startNode.board[startNode.x][startNode.y] = 1;
-        startNode.visited.add((problem.n - 1) + "," + 0);
+        boolean[][] initialVisited = new boolean[problem.n][problem.n];
+        initialVisited[problem.n - 1][0] = true;
+        Node startNode = new Node(problem.n - 1, 0, 1, null, initialVisited);
         frontier.add(startNode);
 
         long startTime = System.currentTimeMillis();
@@ -103,8 +105,6 @@ public class KnightTour {
         while (!frontier.isEmpty()) {
             if ((System.currentTimeMillis() - startTime) > timeLimitMillis) {
                 System.out.println("Timeout.");
-                problem.printBoard(frontier.peek().board);
-                System.out.println("Nodes Expanded: " + nodesExpanded);
                 return null;
             }
 
@@ -139,15 +139,12 @@ public class KnightTour {
         frontier.clear();
 
         if ("h1b".equals(heuristic)) {
-            // comparator is used to sort the nodes in descending order of h1b meaning the node with the highest h1b will be at the end
-            // small values of h1b are better
             nodes.sort(Comparator.comparingInt(n -> n.calculateH1b(problem.moves, problem)));
         } else if ("h2".equals(heuristic)) {
             nodes.sort(Comparator.comparingInt(n -> n.calculateH2(problem.moves, problem)));
         }
 
-        // Add the nodes back to the frontier in the order of the sorted list
-        for (int i = nodes.size() - 1; i > 0; i--) {
+        for (int i = nodes.size() - 1; i >= 0; i--) {
             frontier.addLast(nodes.get(i));
         }
 
@@ -165,7 +162,7 @@ public class KnightTour {
             Scanner sc = new Scanner(System.in);
             System.out.println("Enter board size (n): ");
             int n = sc.nextInt();
-    
+
             System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
             String method = sc.next();
             switch (method.toLowerCase()) {
@@ -178,36 +175,49 @@ public class KnightTour {
                     method = "bfs";
                 }
             }
-    
+
             System.out.println("Enter time limit (minutes): ");
             int timeLimitMinutes = sc.nextInt();
             timeLimitMillis = timeLimitMinutes * 60 * 1000L;
-    
+
             System.out.println("Search Method: " + method);
             System.out.println("Time Limit: " + timeLimitMinutes + " minutes");
-    
+
             Problem problem = new Problem(n);
             Node result = treeSearch(problem, method);
-    
+
             if (result != null) {
                 System.out.println("A solution found.");
                 List<String> path = new ArrayList<>();
-                int[][] finalBoard = result.board;
-                while (result != null) {
-                    path.add(toChessNotation(result.x, result.y, n));
-                    result = result.parent;
+                Node current = result;
+                int[][] finalBoard = new int[n][n];
+                int moveNumber = n * n;
+            
+                // Traverse the path and populate the board
+                while (current != null) {
+                    path.add(toChessNotation(current.x, current.y, n));
+                    finalBoard[current.x][current.y] = moveNumber--;
+                    current = current.parent;
                 }
+            
                 Collections.reverse(path);
                 System.out.println("Path: " + String.join(" -> ", path));
-                problem.printBoard(finalBoard);
+            
+                // Print the final board
+                for (int[] row : finalBoard) {
+                    for (int cell : row) {
+                        System.out.print(cell + "\t");
+                    }
+                    System.out.println();
+                }
             }
+            
         } catch (OutOfMemoryError e) {
             System.out.println("Error: The program ran out of memory. Try reducing the board size.");
-            System.gc(); // Attempt to clear memory
+            System.gc();
         } catch (Exception e) {
             System.out.println("An unexpected error occurred: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    
 }
