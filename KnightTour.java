@@ -6,6 +6,7 @@ public class KnightTour {
         Node parent;
         int[][] board;
         Set<String> visited;
+        int heuristicValue; // For heuristic-based sorting
 
         public Node(int x, int y, int depth, Node parent, int[][] board, Set<String> visited) {
             this.x = x;
@@ -14,7 +15,6 @@ public class KnightTour {
             this.parent = parent;
             this.board = new int[board.length][board.length];
             for (int i = 0; i < board.length; i++) {
-                // clone() method creates a new array with the same elements as the original array
                 this.board[i] = board[i].clone();
             }
             this.visited = new HashSet<>(visited);
@@ -22,7 +22,7 @@ public class KnightTour {
     }
 
     static class Problem {
-        int n; // Board size
+        int n;
         int[][] moves = {{-2, -1}, {-1, -2}, {1, -2}, {2, -1}, {2, 1}, {1, 2}, {-1, 2}, {-2, 1}};
 
         public Problem(int n) {
@@ -33,7 +33,7 @@ public class KnightTour {
             return node.depth == n * n;
         }
 
-        List<Node> expand(Node node) {
+        List<Node> expand(Node node, String heuristic) {
             List<Node> children = new ArrayList<>();
             for (int[] move : moves) {
                 int newX = node.x + move[0];
@@ -46,10 +46,36 @@ public class KnightTour {
                     Set<String> newVisited = new HashSet<>(node.visited);
                     newBoard[newX][newY] = node.depth + 1;
                     newVisited.add(newX + "," + newY);
-                    children.add(new Node(newX, newY, node.depth + 1, node, newBoard, newVisited));
+                    Node child = new Node(newX, newY, node.depth + 1, node, newBoard, newVisited);
+
+                    if ("h1b".equalsIgnoreCase(heuristic)) {
+                        child.heuristicValue = calculateH1b(child);
+                    } else if ("h2".equalsIgnoreCase(heuristic)) {
+                        child.heuristicValue = calculateH2(child);
+                    }
+
+                    children.add(child);
                 }
             }
             return children;
+        }
+
+        int calculateH1b(Node node) {
+            int count = 0;
+            for (int[] move : moves) {
+                int newX = node.x + move[0];
+                int newY = node.y + move[1];
+                if (isValid(node, newX, newY)) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        int calculateH2(Node node) {
+            int h1bValue = calculateH1b(node);
+            int cornerDistance = Math.min(node.x, n - 1 - node.x) + Math.min(node.y, n - 1 - node.y);
+            return h1bValue * 100 + cornerDistance; // Multiply h1b value to prioritize fewer moves
         }
 
         boolean isValid(Node node, int x, int y) {
@@ -69,13 +95,7 @@ public class KnightTour {
     static long timeLimitMillis;
 
     static Node treeSearch(Problem problem, String strategy) {
-        Deque<Node> frontier;
-        if ("BFS".equalsIgnoreCase(strategy)) {
-            frontier = new LinkedList<>(); // Queue for BFS
-        } else {
-            frontier = new ArrayDeque<>(); // Stack for DFS
-        }
-
+        PriorityQueue<Node> frontier = new PriorityQueue<>(Comparator.comparingInt(node -> node.heuristicValue));
         Node startNode = new Node(problem.n - 1, 0, 1, null, new int[problem.n][problem.n], new HashSet<>());
         startNode.board[startNode.x][startNode.y] = 1;
         startNode.visited.add((problem.n - 1) + "," + 0);
@@ -92,10 +112,7 @@ public class KnightTour {
                 return null;
             }
 
-            Node node = "DFS".equalsIgnoreCase(strategy)
-                    ? ((ArrayDeque<Node>) frontier).pollLast() // DFS (LIFO)
-                    : frontier.poll(); // BFS (FIFO)
-
+            Node node = frontier.poll();
 
             // debug with printing node coordinate and depth level
             System.out.println("Processing Node: (" + node.x + ", " + node.y + "), Depth: " + node.depth);
@@ -107,12 +124,10 @@ public class KnightTour {
                 return node;
             }
 
-            List<Node> children = problem.expand(node);
+            List<Node> children = problem.expand(node, strategy);
             nodesExpanded++;
 
-            for (Node child : children) {
-                frontier.add(child);
-            }
+            frontier.addAll(children);
         }
 
         System.out.println("No solution exists.");
@@ -146,8 +161,8 @@ public class KnightTour {
             method = switch (method.toLowerCase()) {
                 case "a" -> "BFS";
                 case "b" -> "DFS";
-                case "c" -> "DFS With Heuristics (h1b)";
-                case "d" -> "DFS With Heuristics (h2)";
+                case "c" -> "h1b";
+                case "d" -> "h2";
                 default -> {
                     System.out.println("Invalid method. Defaulting to BFS.");
                     yield "BFS";
