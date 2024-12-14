@@ -6,7 +6,6 @@ public class KnightTour {
         Node parent;
         int[][] board;
         Set<String> visited;
-        int heuristicValue; // For heuristic-based sorting
 
         public Node(int x, int y, int depth, Node parent, int[][] board, Set<String> visited) {
             this.x = x;
@@ -19,10 +18,33 @@ public class KnightTour {
             }
             this.visited = new HashSet<>(visited);
         }
+
+        // h1b: Number of valid moves from the current position
+        int calculateH1b(int[][] moves, Problem problem) {
+            int validMoves = 0;
+            for (int[] move : moves) {
+                int newX = x + move[0];
+                int newY = y + move[1];
+                if (problem.isValid(this, newX, newY)) {
+                    validMoves++;
+                }
+            }
+            return validMoves;
+        }
+
+        // h2: h1b with proximity to the corners as a tiebreaker
+        int calculateH2(int[][] moves, Problem problem) {
+            int h1b = calculateH1b(moves, problem);
+            int proximityToCorner = Math.min(
+                Math.min(x, problem.n - 1 - x),
+                Math.min(y, problem.n - 1 - y)
+            );
+            return h1b * 100 + proximityToCorner; // Multiplying to prioritize h1b first
+        }
     }
 
     static class Problem {
-        int n;
+        int n; // Board size
         int[][] moves = {{-2, -1}, {-1, -2}, {1, -2}, {2, -1}, {2, 1}, {1, 2}, {-1, 2}, {-2, 1}};
 
         public Problem(int n) {
@@ -33,7 +55,7 @@ public class KnightTour {
             return node.depth == n * n;
         }
 
-        List<Node> expand(Node node, String heuristic) {
+        List<Node> expand(Node node) {
             List<Node> children = new ArrayList<>();
             for (int[] move : moves) {
                 int newX = node.x + move[0];
@@ -46,36 +68,10 @@ public class KnightTour {
                     Set<String> newVisited = new HashSet<>(node.visited);
                     newBoard[newX][newY] = node.depth + 1;
                     newVisited.add(newX + "," + newY);
-                    Node child = new Node(newX, newY, node.depth + 1, node, newBoard, newVisited);
-
-                    if ("h1b".equalsIgnoreCase(heuristic)) {
-                        child.heuristicValue = calculateH1b(child);
-                    } else if ("h2".equalsIgnoreCase(heuristic)) {
-                        child.heuristicValue = calculateH2(child);
-                    }
-
-                    children.add(child);
+                    children.add(new Node(newX, newY, node.depth + 1, node, newBoard, newVisited));
                 }
             }
             return children;
-        }
-
-        int calculateH1b(Node node) {
-            int count = 0;
-            for (int[] move : moves) {
-                int newX = node.x + move[0];
-                int newY = node.y + move[1];
-                if (isValid(node, newX, newY)) {
-                    count++;
-                }
-            }
-            return count;
-        }
-
-        int calculateH2(Node node) {
-            int h1bValue = calculateH1b(node);
-            int cornerDistance = Math.min(node.x, n - 1 - node.x) + Math.min(node.y, n - 1 - node.y);
-            return h1bValue * 100 + cornerDistance; // Multiply h1b value to prioritize fewer moves
         }
 
         boolean isValid(Node node, int x, int y) {
@@ -95,7 +91,7 @@ public class KnightTour {
     static long timeLimitMillis;
 
     static Node treeSearch(Problem problem, String strategy) {
-        PriorityQueue<Node> frontier = new PriorityQueue<>(Comparator.comparingInt(node -> node.heuristicValue));
+        Deque<Node> frontier = new ArrayDeque<>();
         Node startNode = new Node(problem.n - 1, 0, 1, null, new int[problem.n][problem.n], new HashSet<>());
         startNode.board[startNode.x][startNode.y] = 1;
         startNode.visited.add((problem.n - 1) + "," + 0);
@@ -112,10 +108,14 @@ public class KnightTour {
                 return null;
             }
 
-            Node node = frontier.poll();
+            Node node = switch (strategy.toLowerCase()) {
+                case "dfs" -> frontier.pollLast();
+                case "dfs-h1b" -> pollWithHeuristic(frontier, problem, "h1b");
+                case "dfs-h2" -> pollWithHeuristic(frontier, problem, "h2");
+                default -> frontier.poll(); // BFS
+            };
 
-            // debug with printing node coordinate and depth level
-            System.out.println("Processing Node: (" + node.x + ", " + node.y + "), Depth: " + node.depth);
+            if (node == null) continue;
 
             if (problem.isGoal(node)) {
                 System.out.println("Nodes Expanded: " + nodesExpanded);
@@ -124,15 +124,34 @@ public class KnightTour {
                 return node;
             }
 
-            List<Node> children = problem.expand(node, strategy);
+            List<Node> children = problem.expand(node);
             nodesExpanded++;
-
             frontier.addAll(children);
         }
 
         System.out.println("No solution exists.");
         System.out.println("Nodes Expanded: " + nodesExpanded);
         return null;
+    }
+
+    static Node pollWithHeuristic(Deque<Node> frontier, Problem problem, String heuristic) {
+        List<Node> nodes = new ArrayList<>(frontier);
+        frontier.clear();
+
+        if ("h1b".equals(heuristic)) {
+            // comparator is used to sort the nodes in descending order of h1b meaning the node with the highest h1b will be at the end
+            // small values of h1b are better
+            nodes.sort(Comparator.comparingInt(n -> n.calculateH1b(problem.moves, problem)));
+        } else if ("h2".equals(heuristic)) {
+            nodes.sort(Comparator.comparingInt(n -> n.calculateH2(problem.moves, problem)));
+        }
+
+        // Add the nodes back to the frontier in the order of the sorted list
+        for (int i = nodes.size() - 1; i > 0; i--) {
+            frontier.addLast(nodes.get(i));
+        }
+
+        return nodes.isEmpty() ? null : nodes.get(0);
     }
 
     static String toChessNotation(int x, int y, int n) {
@@ -142,61 +161,53 @@ public class KnightTour {
     }
 
     public static void main(String[] args) {
-        try (Scanner sc = new Scanner(System.in)) {
-            System.out.println("===================================");
-            System.out.print("Enter board size (n): ");
+        try {
+            Scanner sc = new Scanner(System.in);
+            System.out.println("Enter board size (n): ");
             int n = sc.nextInt();
-            System.out.println("===================================");
-            
-            System.out.println("===================================");
-            System.out.println("Enter Search Algorithm: ");
-            System.out.println("===================================");
-            System.out.println("a: BFS");
-            System.out.println("b: DFS");
-            System.out.println("c: DFS With Heuristics (h1b)");
-            System.out.println("d: DFS With Heuristics (h2)");
-            System.out.println("===================================");
-            System.out.print("Search Strategy -> ");
+    
+            System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
             String method = sc.next();
-            method = switch (method.toLowerCase()) {
-                case "a" -> "BFS";
-                case "b" -> "DFS";
-                case "c" -> "h1b";
-                case "d" -> "h2";
+            switch (method.toLowerCase()) {
+                case "a" -> method = "bfs";
+                case "b" -> method = "dfs";
+                case "c" -> method = "dfs-h1b";
+                case "d" -> method = "dfs-h2";
                 default -> {
                     System.out.println("Invalid method. Defaulting to BFS.");
-                    yield "BFS";
+                    method = "bfs";
                 }
-            };
-            System.out.println("===================================");
-            
-            System.out.println("===================================");
-            System.out.print("Enter time limit (minutes): ");
+            }
+    
+            System.out.println("Enter time limit (minutes): ");
             int timeLimitMinutes = sc.nextInt();
-            System.out.println("===================================");
-
             timeLimitMillis = timeLimitMinutes * 60 * 1000L;
-            
+    
             System.out.println("Search Method: " + method);
             System.out.println("Time Limit: " + timeLimitMinutes + " minutes");
-            
+    
             Problem problem = new Problem(n);
             Node result = treeSearch(problem, method);
-            
+    
             if (result != null) {
                 System.out.println("A solution found.");
                 List<String> path = new ArrayList<>();
-                int[][] finalBoard = result.board; // Store the final board state
+                int[][] finalBoard = result.board;
                 while (result != null) {
                     path.add(toChessNotation(result.x, result.y, n));
                     result = result.parent;
                 }
                 Collections.reverse(path);
                 System.out.println("Path: " + String.join(" -> ", path));
-                problem.printBoard(finalBoard); // Print the stored final board state
-            } else {
-                System.out.println("No solution or timeout.");
+                problem.printBoard(finalBoard);
             }
+        } catch (OutOfMemoryError e) {
+            System.out.println("Error: The program ran out of memory. Try reducing the board size.");
+            System.gc(); // Attempt to clear memory
+        } catch (Exception e) {
+            System.out.println("An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+    
 }
