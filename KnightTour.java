@@ -4,14 +4,12 @@ public class KnightTour {
     static class Node {
         int x, y, depth, heuristic;
         Node parent;
-        Set<String> visited;
 
-        public Node(int x, int y, int depth, Node parent, Set<String> visited) {
+        public Node(int x, int y, int depth, Node parent) {
             this.x = x;
             this.y = y;
             this.depth = depth;
             this.parent = parent;
-            this.visited = new HashSet<>(visited); // Copy visited set for child node
         }
 
         void calculateH1b(int[][] moves, Problem problem) {
@@ -23,7 +21,7 @@ public class KnightTour {
                     validMoves++;
                 }
             }
-            this.heuristic = validMoves;
+            this.heuristic = validMoves; // Lower is better
         }
 
         void calculateH2(int[][] moves, Problem problem) {
@@ -36,7 +34,7 @@ public class KnightTour {
                 }
             }
             int distanceToCorner = distanceToNearestCorner(problem.n);
-            this.heuristic = h1b * 1000 + distanceToCorner;
+            this.heuristic = h1b * 1000 + distanceToCorner; // Lower is better
         }
 
         int distanceToNearestCorner(int n) {
@@ -45,6 +43,17 @@ public class KnightTour {
             int bottomLeft = (n - 1 - x) + y;
             int bottomRight = (n - 1 - x) + (n - 1 - y);
             return Math.min(Math.min(topLeft, topRight), Math.min(bottomLeft, bottomRight));
+        }
+
+        boolean isVisited(int x, int y) {
+            Node current = this;
+            while (current != null) {
+                if (current.x == x && current.y == y) {
+                    return true;
+                }
+                current = current.parent;
+            }
+            return false;
         }
     }
 
@@ -66,9 +75,7 @@ public class KnightTour {
                 int newX = node.x + move[0];
                 int newY = node.y + move[1];
                 if (isValid(node, newX, newY)) {
-                    Set<String> newVisited = new HashSet<>(node.visited);
-                    newVisited.add(newX + "," + newY);
-                    Node child = new Node(newX, newY, node.depth + 1, node, newVisited);
+                    Node child = new Node(newX, newY, node.depth + 1, node);
                     if ("h1b".equals(heuristicType)) {
                         child.calculateH1b(moves, this);
                     } else if ("h2".equals(heuristicType)) {
@@ -81,17 +88,15 @@ public class KnightTour {
         }
 
         boolean isValid(Node node, int x, int y) {
-            return x >= 0 && y >= 0 && x < n && y < n && !node.visited.contains(x + "," + y);
+            return x >= 0 && y >= 0 && x < n && y < n && !node.isVisited(x, y);
         }
     }
 
-    // Global variable for time constraint (in milliseconds)
     static long timeConstraint;
 
     static Node treeSearch(Problem problem, String strategy) {
         Deque<Node> frontier = new ArrayDeque<>();
-        Node startNode = new Node(problem.n - 1, 0, 1, null, new HashSet<>());
-        startNode.visited.add((problem.n - 1) + "," + 0);
+        Node startNode = new Node(0, 0, 1, null); // Starting at (0,0)
         frontier.add(startNode);
 
         long startTime = System.currentTimeMillis();
@@ -105,10 +110,11 @@ public class KnightTour {
             }
 
             Node node = switch (strategy.toLowerCase()) {
+                case "bfs" -> frontier.pollFirst(); // BFS uses FIFO queue polling from the front
                 case "dfs" -> frontier.pollLast(); // DFS uses LIFO queue polling from the back
                 case "dfs-h1b" -> pollWithHeuristic(frontier, problem, "h1b");
                 case "dfs-h2" -> pollWithHeuristic(frontier, problem, "h2");
-                default -> frontier.poll(); // BFS uses FIFO queue polling from the front
+                default -> frontier.pollFirst();
             };
 
             if (node == null) continue;
@@ -159,37 +165,37 @@ public class KnightTour {
 
     public static void main(String[] args) {
         try {
-            try (Scanner sc = new Scanner(System.in)) {
-                System.out.println("Enter board size (n): ");
-                int n = sc.nextInt();
-                
-                System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
-                String method = sc.next();
-                switch (method.toLowerCase()) {
-                    case "a" -> method = "bfs";
-                    case "b" -> method = "dfs";
-                    case "c" -> method = "dfs-h1b";
-                    case "d" -> method = "dfs-h2";
-                    default -> {
-                        System.out.println("Invalid method. Defaulting to BFS.");
-                        method = "bfs";
-                    }
-                }
-                
-                System.out.println("Enter time constraint in minutes: ");
-                int timeLimitInMinutes = sc.nextInt();
-                timeConstraint = timeLimitInMinutes * 60L * 1000L; // Convert to milliseconds
-                
-                Problem problem = new Problem(n);
-                Node result = treeSearch(problem, method);
-                
-                if (result != null) {
-                    System.out.println("A solution found.");
-                    printBoard(result, n);
-                }
+            Scanner sc = new Scanner(System.in);
 
-                sc.close();
+            System.out.println("Enter board size (n): ");
+            int n = sc.nextInt();
+
+            System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
+            String method = sc.next();
+            switch (method.toLowerCase()) {
+                case "a" -> method = "bfs";
+                case "b" -> method = "dfs";
+                case "c" -> method = "dfs-h1b";
+                case "d" -> method = "dfs-h2";
+                default -> {
+                    System.out.println("Invalid method. Defaulting to BFS.");
+                    method = "bfs";
+                }
             }
+
+            System.out.println("Enter time constraint in minutes: ");
+            int timeLimitInMinutes = sc.nextInt();
+            timeConstraint = timeLimitInMinutes * 60L * 1000L; // Convert to milliseconds
+
+            Problem problem = new Problem(n);
+            Node result = treeSearch(problem, method);
+
+            if (result != null) {
+                System.out.println("A solution found.");
+                printBoard(result, n);
+            }
+
+            sc.close();
         } catch (OutOfMemoryError e) {
             System.err.println("Error: Ran out of memory. Please try a smaller board size or a different search method.");
         } catch (Exception e) {
