@@ -4,12 +4,14 @@ public class KnightTour {
     static class Node {
         int x, y, depth, heuristic;
         Node parent;
+        Set<String> visited;
 
-        public Node(int x, int y, int depth, Node parent) {
+        public Node(int x, int y, int depth, Node parent, Set<String> visited) {
             this.x = x;
             this.y = y;
             this.depth = depth;
             this.parent = parent;
+            this.visited = new HashSet<>(visited); // Copy visited set for child node
         }
 
         void calculateH1b(int[][] moves, Problem problem) {
@@ -21,7 +23,7 @@ public class KnightTour {
                     validMoves++;
                 }
             }
-            this.heuristic = validMoves; // Lower is better
+            this.heuristic = validMoves;
         }
 
         void calculateH2(int[][] moves, Problem problem) {
@@ -34,7 +36,7 @@ public class KnightTour {
                 }
             }
             int distanceToCorner = distanceToNearestCorner(problem.n);
-            this.heuristic = h1b * 1000 + distanceToCorner; // Lower is better
+            this.heuristic = h1b * 1000 + distanceToCorner;
         }
 
         int distanceToNearestCorner(int n) {
@@ -43,17 +45,6 @@ public class KnightTour {
             int bottomLeft = (n - 1 - x) + y;
             int bottomRight = (n - 1 - x) + (n - 1 - y);
             return Math.min(Math.min(topLeft, topRight), Math.min(bottomLeft, bottomRight));
-        }
-
-        boolean isVisited(int x, int y) {
-            Node current = this;
-            while (current != null) {
-                if (current.x == x && current.y == y) {
-                    return true;
-                }
-                current = current.parent;
-            }
-            return false;
         }
     }
 
@@ -75,7 +66,9 @@ public class KnightTour {
                 int newX = node.x + move[0];
                 int newY = node.y + move[1];
                 if (isValid(node, newX, newY)) {
-                    Node child = new Node(newX, newY, node.depth + 1, node);
+                    Set<String> newVisited = new HashSet<>(node.visited);
+                    newVisited.add(newX + "," + newY);
+                    Node child = new Node(newX, newY, node.depth + 1, node, newVisited);
                     if ("h1b".equals(heuristicType)) {
                         child.calculateH1b(moves, this);
                     } else if ("h2".equals(heuristicType)) {
@@ -88,15 +81,17 @@ public class KnightTour {
         }
 
         boolean isValid(Node node, int x, int y) {
-            return x >= 0 && y >= 0 && x < n && y < n && !node.isVisited(x, y);
+            return x >= 0 && y >= 0 && x < n && y < n && !node.visited.contains(x + "," + y);
         }
     }
 
+    // Global variable for time constraint (in milliseconds)
     static long timeConstraint;
 
     static Node treeSearch(Problem problem, String strategy) {
         Deque<Node> frontier = new ArrayDeque<>();
-        Node startNode = new Node(0, 0, 1, null); // Starting at (0,0)
+        Node startNode = new Node(problem.n - 1, 0, 1, null, new HashSet<>());
+        startNode.visited.add((problem.n - 1) + "," + 0);
         frontier.add(startNode);
 
         long startTime = System.currentTimeMillis();
@@ -110,11 +105,10 @@ public class KnightTour {
             }
 
             Node node = switch (strategy.toLowerCase()) {
-                case "bfs" -> frontier.pollFirst(); // BFS uses FIFO queue polling from the front
                 case "dfs" -> frontier.pollLast(); // DFS uses LIFO queue polling from the back
                 case "dfs-h1b" -> pollWithHeuristic(frontier, problem, "h1b");
                 case "dfs-h2" -> pollWithHeuristic(frontier, problem, "h2");
-                default -> frontier.pollFirst();
+                default -> frontier.poll(); // BFS uses FIFO queue polling from the front
             };
 
             if (node == null) continue;
@@ -166,7 +160,6 @@ public class KnightTour {
     public static void main(String[] args) {
         try {
             Scanner sc = new Scanner(System.in);
-
             System.out.println("Enter board size (n): ");
             int n = sc.nextInt();
 
@@ -194,8 +187,6 @@ public class KnightTour {
                 System.out.println("A solution found.");
                 printBoard(result, n);
             }
-
-            sc.close();
         } catch (OutOfMemoryError e) {
             System.err.println("Error: Ran out of memory. Please try a smaller board size or a different search method.");
         } catch (Exception e) {
