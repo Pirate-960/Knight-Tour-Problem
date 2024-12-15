@@ -159,33 +159,36 @@ public class KnightTour {
 
     public static void main(String[] args) {
         try {
-            Scanner sc = new Scanner(System.in);
-            System.out.println("Enter board size (n): ");
-            int n = sc.nextInt();
-
-            System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
-            String method = sc.next();
-            switch (method.toLowerCase()) {
-                case "a" -> method = "bfs";
-                case "b" -> method = "dfs";
-                case "c" -> method = "dfs-h1b";
-                case "d" -> method = "dfs-h2";
-                default -> {
-                    System.out.println("Invalid method. Defaulting to BFS.");
-                    method = "bfs";
+            try (Scanner sc = new Scanner(System.in)) {
+                System.out.println("Enter board size (n): ");
+                int n = sc.nextInt();
+                
+                System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
+                String method = sc.next();
+                switch (method.toLowerCase()) {
+                    case "a" -> method = "bfs";
+                    case "b" -> method = "dfs";
+                    case "c" -> method = "dfs-h1b";
+                    case "d" -> method = "dfs-h2";
+                    default -> {
+                        System.out.println("Invalid method. Defaulting to BFS.");
+                        method = "bfs";
+                    }
                 }
-            }
-
-            System.out.println("Enter time constraint in minutes: ");
-            int timeLimitInMinutes = sc.nextInt();
-            timeConstraint = timeLimitInMinutes * 60L * 1000L; // Convert to milliseconds
-
-            Problem problem = new Problem(n);
-            Node result = treeSearch(problem, method);
-
-            if (result != null) {
-                System.out.println("A solution found.");
-                printBoard(result, n);
+                
+                System.out.println("Enter time constraint in minutes: ");
+                int timeLimitInMinutes = sc.nextInt();
+                timeConstraint = timeLimitInMinutes * 60L * 1000L; // Convert to milliseconds
+                
+                Problem problem = new Problem(n);
+                Node result = treeSearch(problem, method);
+                
+                if (result != null) {
+                    System.out.println("A solution found.");
+                    printBoard(result, n);
+                }
+                
+                sc.close();
             }
         } catch (OutOfMemoryError e) {
             System.err.println("Error: Ran out of memory. Please try a smaller board size or a different search method.");
