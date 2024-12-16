@@ -12,6 +12,7 @@ public class KnightTour {
             this.parent = parent;
         }
 
+        // Calculate h1b (Warnsdorff's rule): Minimize future options
         void calculateH1b(int[][] moves, Problem problem) {
             int minOptions = Integer.MAX_VALUE;
             for (int[] move : moves) {
@@ -32,12 +33,14 @@ public class KnightTour {
             this.heuristic = minOptions == Integer.MAX_VALUE ? 0 : minOptions;
         }
 
+        // Calculate h2 (Warnsdorff's rule + distance to corner)
         void calculateH2(int[][] moves, Problem problem) {
             calculateH1b(moves, problem);
             int distanceToCorner = distanceToNearestCorner(problem.n);
             this.heuristic = this.heuristic * 1000 + distanceToCorner;
         }
 
+        // Calculate Manhattan distance to the nearest corner
         int distanceToNearestCorner(int n) {
             int topLeft = x + y;
             int topRight = x + (n - 1 - y);
@@ -46,6 +49,7 @@ public class KnightTour {
             return Math.min(Math.min(topLeft, topRight), Math.min(bottomLeft, bottomRight));
         }
 
+        // Check if a node has already been visited
         boolean isVisited(int x, int y) {
             Node current = this;
             while (current != null) {
@@ -66,10 +70,12 @@ public class KnightTour {
             this.n = n;
         }
 
+        // Check if a node is the goal
         boolean isGoal(Node node) {
             return node.depth == n * n;
         }
 
+        // Expand children nodes and sort them by heuristic
         List<Node> expand(Node node, String heuristicType) {
             List<Node> children = new ArrayList<>();
             for (int[] move : moves) {
@@ -85,10 +91,11 @@ public class KnightTour {
                     children.add(child);
                 }
             }
-            children.sort(Comparator.comparingInt(n -> n.heuristic)); // Sort children by heuristic
+            children.sort(Comparator.comparingInt(n -> n.heuristic)); // Sort by heuristic
             return children;
         }
 
+        // Check if a move is valid
         boolean isValid(Node node, int x, int y) {
             return x >= 0 && y >= 0 && x < n && y < n && !node.isVisited(x, y);
         }
@@ -96,11 +103,12 @@ public class KnightTour {
 
     static long timeConstraint;
 
+    // General tree search method for BFS/DFS/DFS with heuristics
     static Node treeSearch(Problem problem, String strategy) {
         Stack<Node> stack = new Stack<>();
         Queue<Node> queue = new LinkedList<>();
 
-        Node startNode = new Node(problem.n - 1, 0, 1, null);
+        Node startNode = new Node(0, 0, 1, null);
 
         if (strategy.equalsIgnoreCase("bfs")) {
             queue.add(startNode);
@@ -150,6 +158,7 @@ public class KnightTour {
         return null;
     }
 
+    // Print the solution board
     static void printBoard(Node node, int n) {
         int[][] board = new int[n][n];
         Node current = node;
@@ -159,17 +168,16 @@ public class KnightTour {
             current = current.parent;
         }
 
-        for (int[] row : board) {
-            for (int cell : row) {
-                System.out.printf("%3d ", cell);
+        for (int row = n - 1; row >= 0; row--) {
+            for (int col = 0; col < n; col++) {
+                System.out.printf("%3d ", board[row][col]);
             }
             System.out.println();
         }
     }
 
     public static void main(String[] args) {
-        try {
-            Scanner sc = new Scanner(System.in);
+        try (Scanner sc = new Scanner(System.in)) {
             System.out.println("Enter board size (n): ");
             int n = sc.nextInt();
 
