@@ -37,7 +37,7 @@ public class KnightTour {
         void calculateH2(int[][] moves, Problem problem) {
             calculateH1b(moves, problem);
             int distanceToCorner = distanceToNearestCorner(problem.n);
-            this.heuristic = this.heuristic * 1000 + distanceToCorner;
+            this.heuristic = this.heuristic * 10 + distanceToCorner;
         }
 
         // Calculate Manhattan distance to the nearest corner
