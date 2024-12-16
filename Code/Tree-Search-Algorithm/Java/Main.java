@@ -8,7 +8,7 @@ public class Main {
     public static void main(String[] args) {
         // Default parameters
         int boardSize = 8;
-        String searchMethod = "DFS_H1B";
+        String searchMethod = "DFS_H2";
         long timeLimit = 15 * 60 * 1000; // 15 minutes in milliseconds
 
         // Parse command-line arguments if provided
@@ -19,6 +19,7 @@ public class Main {
         }
 
         // Create problem and knight tour solver
+        System.out.println("Knight's Tour Problem");
         Problem problem = new Problem(boardSize);
         KnightTour knightTour = new KnightTour();
 
