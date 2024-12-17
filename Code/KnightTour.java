@@ -64,11 +64,27 @@ public class KnightTour {
     
     public static void main(String[] args) throws IOException {
         try (Scanner sc = new Scanner(System.in)) {
-            System.out.println("Enter board size (n): ");
-            int n = sc.nextInt();
 
+            System.out.println("+++========================== Knight's Tour Problem ==========================+++");
+            System.out.println("+++===========================================================================+++");
+            System.out.print("Enter board size (n): ");
+            int n = sc.nextInt();
+            System.out.println("+++===========================================================================+++");
+
+
+            System.out.println("+++===========================================================================+++");
+            System.out.println("+++========================= Search Method Selection =========================+++");
             System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
+            System.out.println("a: BFS (Breadth-First Search)");
+            System.out.println("b: DFS (Depth-First Search)");
+            System.out.println("c: DFS-H1B (Depth-First Search with heuristic h1b)");
+            System.out.println("d: DFS-H2 (Depth-First Search with heuristic h2)");
+            System.out.println("+++===========================================================================+++");
+            System.out.print("Enter search method: ");
             String method = sc.next();
+            System.out.println("+++===========================================================================+++");
+
+
             switch (method.toLowerCase()) {
                 case "a" -> method = "bfs";
                 case "b" -> method = "dfs";
@@ -77,8 +93,12 @@ public class KnightTour {
                 default -> throw new IllegalArgumentException("Invalid method. Please choose a valid option.");
             }
 
-            System.out.println("Enter time constraint in minutes: ");
+            System.out.println("+++========================== Time Constraint Limit ==========================+++");
+            System.out.println("+++===========================================================================+++");
+            System.out.print("Enter time constraint in minutes: ");
             int timeLimitInMinutes = sc.nextInt();
+            System.out.println("+++===========================================================================+++");
+            
             timeConstraint = timeLimitInMinutes * 60L * 1000L;
 
             Problem problem = new Problem(n);
