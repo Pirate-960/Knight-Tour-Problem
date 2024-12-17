@@ -138,7 +138,7 @@ public class KnightTour {
                 node = stack.pop();
             }
 
-            System.out.println("Popped: " + node.x + ", " + node.y + " D: " + node.depth);
+            System.out.println("<-|| Popped: (" + node.x + ", " + node.y + ") --- Depth: " + node.depth);
 
             // return the node if it is a goal state
             if (problem.isGoal(node)) {
@@ -159,7 +159,7 @@ public class KnightTour {
             } else if (strategy.equalsIgnoreCase("dfs-h1b") || strategy.equalsIgnoreCase("dfs-h2")) {
                 for (int i = children.size() - 1; i >= 0; i--) {
                     stack.push(children.get(i));
-                    System.out.println("Pushed: " + children.get(i).x + ", " + children.get(i).y + " D: "
+                    System.out.println("||-> Pushed: (" + children.get(i).x + ", " + children.get(i).y + ") --- Depth: "
                             + children.get(i).depth);
                 }
             }
@@ -167,7 +167,7 @@ public class KnightTour {
             else {
                 for (Node child : children) {
                     stack.push(child);
-                    System.out.println("Pushed: " + child.x + ", " + child.y + " D: " + child.depth);
+                    System.out.println("||-> Pushed: (" + child.x + ", " + child.y + ") --- Depth: " + child.depth);
                 }
             }
         }
@@ -187,7 +187,7 @@ public class KnightTour {
             current = current.parent;
         }
     
-        // print the board (starting from the bottom-left corner for an 8x8 board)
+        // print the board (starting from the bottom-left corner for an nxn board)
         for (int i = n - 1; i >= 0; i--) {  
             for (int j = 0; j < n; j++) {
                 if (board[i][j] == 0) {
@@ -200,15 +200,11 @@ public class KnightTour {
         }
     }
     
-    
-    
-
     public static void main(String[] args) {
-        try {
-            Scanner sc = new Scanner(System.in);
+        try (Scanner sc = new Scanner(System.in)) {
             System.out.println("Enter board size (n): ");
             int n = sc.nextInt();
-
+    
             System.out.println("Enter search method (a: BFS, b: DFS, c: DFS-H1B, d: DFS-H2): ");
             String method = sc.next();
             switch (method.toLowerCase()) {
@@ -218,23 +214,43 @@ public class KnightTour {
                 case "d" -> method = "dfs-h2";
                 default -> throw new IllegalArgumentException("Invalid method. Please choose a valid option.");
             }
-
+    
             System.out.println("Enter time constraint in minutes: ");
             int timeLimitInMinutes = sc.nextInt();
             timeConstraint = timeLimitInMinutes * 60L * 1000L;
-
+    
             Problem problem = new Problem(n);
             Node result = treeSearch(problem, method);
-
+    
             if (result != null) {
                 System.out.println("A solution found.");
+                printPath(result, n);
                 printBoard(result, n);
             }
         } catch (OutOfMemoryError e) {
-            System.err
-                    .println("Error: Ran out of memory. Please try a smaller board size or a different search method.");
-        } catch (Exception e) {
+            System.err.println("Error: Ran out of memory. Please try a smaller board size or a different search method.");
+        } catch (IllegalArgumentException e) {
             System.err.println("An unexpected error occurred: " + e.getMessage());
         }
     }
+    
+    // Method to print the path in x,y coordinates and chess notation
+    static void printPath(Node node, int n) {
+        List<Node> path = new ArrayList<>();
+        Node current = node;
+    
+        // Backtrack to collect the full path
+        while (current != null) {
+            path.add(current);
+            current = current.parent;
+        }
+        Collections.reverse(path);  // Reverse to start from the initial move
+    
+        System.out.println("\nKnight Tour Path:");
+        for (Node step : path) {
+            char col = (char) ('a' + step.y); // Convert column index to letter
+            int row = step.x + 1; // Convert row index to 1-based
+            System.out.printf("Step %d: (%d, %d) -> %c%d%n", step.depth, step.x, step.y, col, row);
+        }
+    }    
 }
