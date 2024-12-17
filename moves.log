@@ -1095,4 +1095,4 @@ Popped: (9, 7) --- Depth: 255
 Pushed: (7, 8) --- Depth: 256
 Popped: (7, 8) --- Depth: 256
 Nodes Expanded: 255
-Time spent: 0.407 seconds
+Time spent: 0.136 seconds

@@ -9,14 +9,42 @@ TRACKING_FOLDER = 'knight_tour_tracking'
 os.makedirs(TRACKING_FOLDER, exist_ok=True)
 
 class KnightTourVisualizer:
-    def __init__(self, board_size: int = 5, cell_size: int = 150):
+    def __init__(self, board_config: List[List[int]], cell_size: int = None):
         """
-        Initialize the Knight Tour Visualizer with enhanced creativity
+        Initialize the Knight Tour Visualizer with dynamic board sizing
         
-        :param board_size: Size of the chess board (default 5x5)
-        :param cell_size: Size of each cell in pixels (default 150)
+        :param board_config: 2D list representing the board configuration
+        :param cell_size: Optional custom cell size, otherwise auto-calculated
         """
         pygame.init()
+        
+        # Determine board size from configuration
+        self.board_config = board_config
+        self.BOARD_SIZE = len(board_config)
+        
+        # Dynamically calculate cell size to fit screen
+        if cell_size is None:
+            # Get screen resolution
+            infoObject = pygame.display.Info()
+            screen_width = infoObject.current_w
+            screen_height = infoObject.current_h
+            
+            # Calculate max possible cell size while keeping entire board visible
+            max_cell_width = (screen_width - 100) // self.BOARD_SIZE
+            max_cell_height = (screen_height - 100) // self.BOARD_SIZE
+            
+            # Choose the smaller dimension to ensure full visibility
+            self.CELL_SIZE = min(max_cell_width, max_cell_height, 150)
+        else:
+            self.CELL_SIZE = cell_size
+        
+        # Calculate screen size
+        self.SCREEN_SIZE_X = self.BOARD_SIZE * self.CELL_SIZE
+        self.SCREEN_SIZE_Y = self.BOARD_SIZE * self.CELL_SIZE
+        
+        # Pygame setup with dynamic sizing
+        self.screen = pygame.display.set_mode((self.SCREEN_SIZE_X, self.SCREEN_SIZE_Y))
+        pygame.display.set_caption("🏇 Magical Knight's Mystical Tour 🏇")
         
         # Enhanced color palette with gradients and creativity
         self.BACKGROUND_COLOR = (30, 30, 50)  # Deep midnight blue
@@ -30,21 +58,14 @@ class KnightTourVisualizer:
             (0, 0, 255),    # Deep blue
             (255, 165, 0),  # Orange
             (255, 0, 255),  # Magenta
+            (255, 255, 0),  # Yellow
+            (128, 0, 128)   # Purple
         ]
-        
-        # Board configuration
-        self.BOARD_SIZE = board_size
-        self.CELL_SIZE = cell_size
-        self.SCREEN_SIZE = self.BOARD_SIZE * self.CELL_SIZE
-        
-        # Pygame setup
-        self.screen = pygame.display.set_mode((self.SCREEN_SIZE, self.SCREEN_SIZE))
-        pygame.display.set_caption("🏇 Magical Knight's Mystical Tour 🏇")
         
         # Fonts
         pygame.font.init()
-        self.font = pygame.font.Font(None, 36)
-        self.large_font = pygame.font.Font(None, 72)
+        self.font = pygame.font.Font(None, max(24, self.CELL_SIZE // 5))
+        self.large_font = pygame.font.Font(None, max(48, self.CELL_SIZE // 2.5))
         
         # Tour path and particles
         self.tour_path = self.load_tour_path()
@@ -73,7 +94,7 @@ class KnightTourVisualizer:
             'x': x,
             'y': y,
             'color': random.choice(self.PARTICLE_COLORS),
-            'size': random.randint(2, 8),
+            'size': random.randint(2, max(3, self.CELL_SIZE // 20)),
             'speed_x': random.uniform(-2, 2),
             'speed_y': random.uniform(-2, 2),
             'life': random.randint(30, 60)
@@ -171,6 +192,9 @@ class KnightTourVisualizer:
             # Clear the screen with a magical background
             self.screen.fill(self.BACKGROUND_COLOR)
             
+            # Draw the board
+            self.draw_board()
+            
             # Draw historical path
             for prev_step in range(step + 1):
                 prev_x, prev_y = self.tour_path[prev_step]
@@ -191,7 +215,7 @@ class KnightTourVisualizer:
                 # Draw path lines with fading
                 if prev_step > 0:
                     prev_prev_x, prev_prev_y = self.tour_path[prev_step - 1]
-                    line_surface = pygame.Surface((self.SCREEN_SIZE, self.SCREEN_SIZE), pygame.SRCALPHA)
+                    line_surface = pygame.Surface((self.SCREEN_SIZE_X, self.SCREEN_SIZE_Y), pygame.SRCALPHA)
                     pygame.draw.line(
                         line_surface, 
                         (*self.PARTICLE_COLORS[prev_step % len(self.PARTICLE_COLORS)], opacity),
@@ -251,7 +275,7 @@ def main():
         board_config = [list(map(int, line.split())) for line in f.readlines()]
     
     # Initialize and run visualization
-    visualizer = KnightTourVisualizer()
+    visualizer = KnightTourVisualizer(board_config)
     visualizer.visualize_tour()
 
 if __name__ == "__main__":
