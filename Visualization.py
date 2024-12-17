@@ -169,8 +169,8 @@ class KnightTourVisualizer:
                     self.CELL_SIZE
                 )
                 
-                # Black and white color alternation
-                color = (255, 255, 255) if (row + col) % 2 == 0 else (0, 0, 0)
+                # Magical color alternation
+                color = self.LIGHT_SQUARE if (row + col) % 2 == 0 else self.DARK_SQUARE
                 pygame.draw.rect(self.screen, color, rect)
                 
                 # Subtle coordinate marking
@@ -198,28 +198,34 @@ class KnightTourVisualizer:
             # Draw historical path
             for prev_step in range(step + 1):
                 prev_x, prev_y = self.tour_path[prev_step]
-
-                # Draw historical knight without opacity
-                knight_rect = self.knight_img.get_rect(
+                
+                # Fade effect for historical moves
+                opacity = int(255 * (prev_step / step)) if step > 0 else 255
+                historical_knight = self.knight_img.copy()
+                historical_knight.set_alpha(opacity)
+                
+                knight_rect = historical_knight.get_rect(
                     center=(
                         prev_x * self.CELL_SIZE + self.CELL_SIZE // 2, 
                         prev_y * self.CELL_SIZE + self.CELL_SIZE // 2
                     )
                 )
-                self.screen.blit(self.knight_img, knight_rect)
-
-                # Draw path lines without fading
+                self.screen.blit(historical_knight, knight_rect)
+                
+                # Draw path lines with fading
                 if prev_step > 0:
                     prev_prev_x, prev_prev_y = self.tour_path[prev_step - 1]
+                    line_surface = pygame.Surface((self.SCREEN_SIZE_X, self.SCREEN_SIZE_Y), pygame.SRCALPHA)
                     pygame.draw.line(
-                        self.screen, 
-                        self.PARTICLE_COLORS[prev_step % len(self.PARTICLE_COLORS)],
+                        line_surface, 
+                        (*self.PARTICLE_COLORS[prev_step % len(self.PARTICLE_COLORS)], opacity),
                         (prev_prev_x * self.CELL_SIZE + self.CELL_SIZE // 2, 
-                        prev_prev_y * self.CELL_SIZE + self.CELL_SIZE // 2),
+                         prev_prev_y * self.CELL_SIZE + self.CELL_SIZE // 2),
                         (prev_x * self.CELL_SIZE + self.CELL_SIZE // 2, 
-                        prev_y * self.CELL_SIZE + self.CELL_SIZE // 2),
+                         prev_y * self.CELL_SIZE + self.CELL_SIZE // 2),
                         5
                     )
+                    self.screen.blit(line_surface, (0, 0))
             
             # Generate magical particles
             center_x = x * self.CELL_SIZE + self.CELL_SIZE // 2
@@ -262,7 +268,6 @@ class KnightTourVisualizer:
                     waiting = False
         
         pygame.quit()
-
 
 def main():
     # Read the board configuration
