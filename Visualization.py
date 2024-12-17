@@ -72,7 +72,7 @@ class KnightTourVisualizer:
         self.particles = []
         
         # Particle and effect management
-        self.max_particles = 50
+        self.max_particles = 100
         self.particle_timer = 0
         
         # Load enhanced knight image
@@ -233,7 +233,7 @@ class KnightTourVisualizer:
             
             # Add new particles
             if len(self.particles) < self.max_particles:
-                for _ in range(random.randint(5, 10)):
+                for _ in range(random.randint(10, 20)):
                     particle = self.create_particle(center_x, center_y)
                     self.particles.append(particle)
             
@@ -252,7 +252,7 @@ class KnightTourVisualizer:
             pygame.image.save(self.screen, screenshot_path)
             
             # Smooth animation
-            self.clock.tick(2)  # 2 FPS for detailed observation
+            self.clock.tick(20)  # 20 FPS for detailed observation
             
             # Event handling
             for event in pygame.event.get():
