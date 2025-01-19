@@ -150,14 +150,14 @@ class KnightTourVisualizer:
         :return: List of (x, y) coordinates for the knight's tour
         """
         path = []
-        with open('path.txt', 'r') as f:
+        with open('path.txt', 'r', encoding='utf-8') as f:
             for line in f:
                 if line.startswith('Step'):
                     coords_str = line.split('(')[1].split(')')[0]
                     x, y = map(int, coords_str.split(','))
                     path.append((x, y))
         return path
-    
+        
     def draw_board(self):
         """Draw the chess board with magical alternating colors"""
         for row in range(self.BOARD_SIZE):
@@ -173,8 +173,10 @@ class KnightTourVisualizer:
                 color = self.LIGHT_SQUARE if (row + col) % 2 == 0 else self.DARK_SQUARE
                 pygame.draw.rect(self.screen, color, rect)
                 
-                # Subtle coordinate marking
-                coord_text = f"{chr(col + 97)}{self.BOARD_SIZE - row}"
+                # Coordinates start from 'a1' at the top-left and advance downwards
+                # coord_text = f"{chr(col + 97)}{row + 1}"  # Flip row numbering logic
+                coord_text = " "  # No coordinates for now
+
                 text_surf = self.font.render(coord_text, True, (100, 100, 100))
                 text_rect = text_surf.get_rect(
                     center=(
@@ -183,6 +185,7 @@ class KnightTourVisualizer:
                     )
                 )
                 self.screen.blit(text_surf, text_rect)
+
     
     def visualize_tour(self):
         """
@@ -252,7 +255,7 @@ class KnightTourVisualizer:
             pygame.image.save(self.screen, screenshot_path)
             
             # Smooth animation
-            self.clock.tick(20)  # 20 FPS for detailed observation
+            self.clock.tick(120)  # 20 FPS for detailed observation
             
             # Event handling
             for event in pygame.event.get():

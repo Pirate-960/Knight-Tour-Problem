@@ -110,8 +110,15 @@ public class KnightTour {
                 printBoard(result, n);
             }
         } catch (OutOfMemoryError e) {
-            System.err
-                    .println("Error: Ran out of memory. Please try a smaller board size or a different search method.");
+            Runtime runtime = Runtime.getRuntime();
+            System.out.println("Out of Memory Error occurred.");
+
+            System.out.println("Maximum memory: " + (runtime.maxMemory() / 1024 / 1024) + " MB");
+            System.out.println("Total memory: " + (runtime.totalMemory() / 1024 / 1024) + " MB");
+            System.out.println("Free memory: " + (runtime.freeMemory() / 1024 / 1024) + " MB");
+            System.out.println("Used memory: " + ((runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024) + " MB");
+
+            System.err.println("Error: Ran out of memory. Please try a smaller board size or a different search method.");
         } catch (IllegalArgumentException e) {
             System.err.println("An unexpected error occurred: " + e.getMessage());
         }
@@ -263,8 +270,8 @@ public class KnightTour {
                     node = stack.pop();
                 }
                 
-                System.out.println("<-|| Popped: (" + node.x + ", " + node.y + ") --- Depth: " + node.depth);
-                logWriter.write("Popped: (" + node.x + ", " + node.y + ") --- Depth: " + node.depth + "\n");
+                // System.out.println("<-|| Popped: (" + node.x + ", " + node.y + ") --- Depth: " + node.depth);
+                // logWriter.write("Popped: (" + node.x + ", " + node.y + ") --- Depth: " + node.depth + "\n");
                 
                 // return the node if it is a goal state
                 if (problem.isGoal(node)) {
@@ -288,18 +295,18 @@ public class KnightTour {
                 } else if (strategy.equalsIgnoreCase("dfs-h1b") || strategy.equalsIgnoreCase("dfs-h2")) {
                     for (int i = children.size() - 1; i >= 0; i--) {
                         stack.push(children.get(i));
-                        System.out.println("||-> Pushed: (" + children.get(i).x + ", " + children.get(i).y + ") --- Depth: "
-                                + children.get(i).depth);
-                        logWriter.write("Pushed: (" + children.get(i).x + ", " + children.get(i).y + ") --- Depth: "
-                                + children.get(i).depth + "\n");
+                        // System.out.println("||-> Pushed: (" + children.get(i).x + ", " + children.get(i).y + ") --- Depth: "
+                        //         + children.get(i).depth);
+                        // logWriter.write("Pushed: (" + children.get(i).x + ", " + children.get(i).y + ") --- Depth: "
+                        //         + children.get(i).depth + "\n");
                     }
                 }
                 // default dfs
                 else {
                     for (Node child : children) {
                         stack.push(child);
-                        System.out.println("||-> Pushed: (" + child.x + ", " + child.y + ") --- Depth: " + child.depth);
-                        logWriter.write("Pushed: (" + child.x + ", " + child.y + ") --- Depth: " + child.depth + "\n");
+                        // System.out.println("||-> Pushed: (" + child.x + ", " + child.y + ") --- Depth: " + child.depth);
+                        // logWriter.write("Pushed: (" + child.x + ", " + child.y + ") --- Depth: " + child.depth + "\n");
                     }
                 }
             }
